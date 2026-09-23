@@ -446,9 +446,8 @@ class _MainShellState extends State<MainShell> {
   List products = [];
   bool loadingProduk = true;
 
-  final titles = ['Workflows', 'Items', 'Search', 'Notifications', 'Menu'];
+  final titles = ['Items', 'Search', 'Notifications', 'Menu'];
   final subtitles = [
-    'Streamline warehouse operations',
     'Daftar produk gudang',
     'Cari produk atau scan',
     'Pemberitahuan terbaru',
@@ -535,7 +534,6 @@ class _MainShellState extends State<MainShell> {
   @override
   Widget build(BuildContext context) {
     final tabs = [
-      const WorkflowsTab(),
       ItemsTab(products: products, loading: loadingProduk, onRefresh: fetchProducts),
       SearchTab(products: products, onScanTap: bukaScanner),
       const NotificationsTab(),
@@ -577,7 +575,6 @@ class _MainShellState extends State<MainShell> {
         unselectedItemColor: Colors.grey.shade400,
         onTap: (index) => setState(() => currentIndex = index),
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.hub_outlined), label: 'Workflows'),
           BottomNavigationBarItem(icon: Icon(Icons.inventory_2_outlined), label: 'Items'),
           BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
           BottomNavigationBarItem(icon: Icon(Icons.notifications_outlined), label: 'Notifications'),
@@ -588,92 +585,7 @@ class _MainShellState extends State<MainShell> {
   }
 }
 
-// ========================================================================
-// TAB: WORKFLOWS
-// ========================================================================
 
-class WorkflowsTab extends StatelessWidget {
-  const WorkflowsTab({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        _KartuWorkflow(
-          icon: Icons.qr_code_scanner,
-          judul: 'Scan & Catat Transaksi',
-          deskripsi: 'Scan barcode atau input manual SKU untuk mencatat barang masuk/keluar.',
-          onTap: () async {
-            await Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const ScannerPage()),
-            );
-          },
-        ),
-        const SizedBox(height: 12),
-        _KartuWorkflow(
-          icon: Icons.history,
-          judul: 'Riwayat Transaksi',
-          deskripsi: 'Lihat transaksi stok masuk/keluar yang sudah tercatat.',
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const RiwayatStafPage()),
-            );
-          },
-        ),
-      ],
-    );
-  }
-}
-
-class _KartuWorkflow extends StatelessWidget {
-  final IconData icon;
-  final String judul;
-  final String deskripsi;
-  final VoidCallback onTap;
-
-  const _KartuWorkflow({
-    required this.icon,
-    required this.judul,
-    required this.deskripsi,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: Colors.grey.shade200),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Row(
-          children: [
-            CircleAvatar(backgroundColor: Colors.blue.shade50, child: Icon(icon, color: Colors.blue.shade700)),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(judul, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                  const SizedBox(height: 4),
-                  Text(deskripsi, style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
-                ],
-              ),
-            ),
-            const Icon(Icons.chevron_right, color: Colors.grey),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 // ========================================================================
 // TAB: ITEMS
