@@ -90,6 +90,7 @@ class _LoginPageState extends State<LoginPage> {
   final passwordController = TextEditingController();
   String pesanError = '';
   bool loading = false;
+  bool obscurePassword = true;
 
   Future<void> login() async {
     setState(() {
@@ -99,7 +100,7 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:3000/auth/login'),
+        Uri.parse('http://10.200.145.156:5000/auth/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': emailController.text,
@@ -178,8 +179,51 @@ class _LoginPageState extends State<LoginPage> {
               const Text('Password', style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600)),
               TextField(
                 controller: passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(hintText: 'Enter your password', border: UnderlineInputBorder()),
+                obscureText: obscurePassword,
+                decoration: InputDecoration(
+                  hintText: 'Enter your password',
+                  border: const UnderlineInputBorder(),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      obscurePassword ? Icons.visibility_off : Icons.visibility,
+                      color: Colors.grey.shade600,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        obscurePassword = !obscurePassword;
+                      });
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.center,
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ForgotPasswordPage(
+                          initialEmail: emailController.text,
+                        ),
+                      ),
+                    );
+                  },
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(50, 30),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    'Forgot Password?',
+                    style: TextStyle(
+                      color: Colors.blue.shade600,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
               ),
 
               if (pesanError.isNotEmpty) ...[
@@ -266,6 +310,7 @@ class _RegisterPageState extends State<RegisterPage> {
   String pesan = '';
   bool sukses = false;
   bool loading = false;
+  bool obscurePassword = true;
 
   Future<void> register() async {
     setState(() {
@@ -351,8 +396,22 @@ class _RegisterPageState extends State<RegisterPage> {
               const Text('Password', style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600)),
               TextField(
                 controller: passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(hintText: 'Enter your password', border: UnderlineInputBorder()),
+                obscureText: obscurePassword,
+                decoration: InputDecoration(
+                  hintText: 'Enter your password',
+                  border: const UnderlineInputBorder(),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      obscurePassword ? Icons.visibility_off : Icons.visibility,
+                      color: Colors.grey.shade600,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        obscurePassword = !obscurePassword;
+                      });
+                    },
+                  ),
+                ),
               ),
               const SizedBox(height: 16),
               const Text('Nomor Telepon (Opsional)', style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600)),
@@ -431,6 +490,163 @@ class _RegisterPageState extends State<RegisterPage> {
 }
 
 // ========================================================================
+// FORGOT PASSWORD PAGE
+// ========================================================================
+
+class ForgotPasswordPage extends StatefulWidget {
+  final String initialEmail;
+  const ForgotPasswordPage({super.key, this.initialEmail = ''});
+
+  @override
+  State<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
+}
+
+class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
+  late final TextEditingController emailController;
+  String pesan = '';
+  bool sukses = false;
+  bool loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    emailController = TextEditingController(text: widget.initialEmail);
+  }
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    super.dispose();
+  }
+
+  Future<void> kirimReset() async {
+    final email = emailController.text.trim();
+    if (email.isEmpty) {
+      setState(() {
+        sukses = false;
+        pesan = 'Silakan masukkan alamat email Anda';
+      });
+      return;
+    }
+
+    setState(() {
+      loading = true;
+      pesan = '';
+    });
+
+    await Future.delayed(const Duration(milliseconds: 800));
+
+    setState(() {
+      loading = false;
+      sukses = true;
+      pesan = 'Tautan atau instruksi pemulihan kata sandi telah dikirim ke $email. Silakan periksa kotak masuk atau hubungi manajer gudang.';
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 90,
+                  height: 90,
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Center(child: Text('🔐', style: TextStyle(fontSize: 40))),
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Text('Forgot Password?', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 6),
+              Text(
+                'Masukkan email akun Anda untuk mendapatkan tautan pemulihan kata sandi.',
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+              ),
+              const SizedBox(height: 28),
+
+              const Text('Email', style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600)),
+              TextField(
+                controller: emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(
+                  hintText: 'Enter your registered email',
+                  border: UnderlineInputBorder(),
+                ),
+              ),
+
+              if (pesan.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: sukses ? Colors.green.shade50 : Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    pesan,
+                    style: TextStyle(
+                      color: sukses ? Colors.green.shade700 : Colors.red.shade700,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 28),
+              SizedBox(
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: loading ? null : kirimReset,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue.shade600,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: loading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text('Reset Password', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+              Center(
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(
+                    'Back to Sign in',
+                    style: TextStyle(color: Colors.blue.shade600, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ========================================================================
 // MAIN SHELL — bottom nav 5 tab
 // ========================================================================
 
@@ -442,15 +658,14 @@ class MainShell extends StatefulWidget {
 }
 
 class _MainShellState extends State<MainShell> {
-  int currentIndex = 1; // default buka tab "Items"
+  int currentIndex = 0; // default buka tab "Items"
   List products = [];
   bool loadingProduk = true;
 
-  final titles = ['Items', 'Search', 'Notifications', 'Menu'];
+  final titles = ['Items', 'Search', 'Menu'];
   final subtitles = [
     'Daftar produk gudang',
     'Cari produk atau scan',
-    'Pemberitahuan terbaru',
     'Profil & pengaturan akun',
   ];
 
@@ -536,7 +751,6 @@ class _MainShellState extends State<MainShell> {
     final tabs = [
       ItemsTab(products: products, loading: loadingProduk, onRefresh: fetchProducts),
       SearchTab(products: products, onScanTap: bukaScanner),
-      const NotificationsTab(),
       const MenuTab(),
     ];
 
@@ -561,7 +775,7 @@ class _MainShellState extends State<MainShell> {
           ],
         ),
       ),
-      floatingActionButton: currentIndex == 1
+      floatingActionButton: currentIndex == 0
           ? FloatingActionButton(
               onPressed: tampilkanPilihanTambah,
               backgroundColor: Colors.grey.shade700,
@@ -577,7 +791,6 @@ class _MainShellState extends State<MainShell> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.inventory_2_outlined), label: 'Items'),
           BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
-          BottomNavigationBarItem(icon: Icon(Icons.notifications_outlined), label: 'Notifications'),
           BottomNavigationBarItem(icon: Icon(Icons.menu), label: 'Menu'),
         ],
       ),
@@ -759,28 +972,6 @@ class _SearchTabState extends State<SearchTab> {
           ),
         ),
       ],
-    );
-  }
-}
-
-// ========================================================================
-// TAB: NOTIFICATIONS
-// ========================================================================
-
-class NotificationsTab extends StatelessWidget {
-  const NotificationsTab({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.notifications_none, size: 64, color: Colors.grey.shade300),
-          const SizedBox(height: 12),
-          Text('Belum ada notifikasi', style: TextStyle(color: Colors.grey.shade400)),
-        ],
-      ),
     );
   }
 }
