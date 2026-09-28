@@ -4,7 +4,89 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
-void main() {
+// ========================================================================
+// API CONFIGURATION (PENGATURAN URL SERVER DINAMIS)
+// ========================================================================
+
+class ApiConfig {
+  static String baseUrl = 'http://localhost:3000';
+
+  // Memuat URL server yang tersimpan di SharedPreferences saat aplikasi dibuka
+  static Future<void> loadBaseUrl() async {
+    final prefs = await SharedPreferences.getInstance();
+    baseUrl = prefs.getString('server_url') ?? 'http://localhost:3000';
+  }
+
+  // Menyimpan URL server baru secara permanen
+  static Future<void> setBaseUrl(String newUrl) async {
+    String formatted = newUrl.trim();
+    if (formatted.isNotEmpty) {
+      if (!formatted.startsWith('http://') && !formatted.startsWith('https://')) {
+        formatted = 'http://$formatted';
+      }
+      if (formatted.endsWith('/')) {
+        formatted = formatted.substring(0, formatted.length - 1);
+      }
+      baseUrl = formatted;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('server_url', baseUrl);
+    }
+  }
+}
+
+// Dialog Popup untuk mengubah URL server kapan saja
+void showServerConfigDialog(BuildContext context, {VoidCallback? onSaved}) {
+  final controller = TextEditingController(text: ApiConfig.baseUrl);
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: const Text('Pengaturan URL Server'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Masukkan IP/URL Server Backend (contoh: http://localhost:3000 atau http://10.0.2.2:3000):',
+              style: TextStyle(fontSize: 13, color: Colors.grey),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                hintText: 'http://localhost:3000',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              await ApiConfig.setBaseUrl(controller.text);
+              if (context.mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('URL Server disimpan: ${ApiConfig.baseUrl}')),
+                );
+              }
+              if (onSaved != null) onSaved();
+            },
+            child: const Text('Simpan'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await ApiConfig.loadBaseUrl();
   runApp(const MyApp());
 }
 
@@ -90,6 +172,7 @@ class _LoginPageState extends State<LoginPage> {
   final passwordController = TextEditingController();
   String pesanError = '';
   bool loading = false;
+  bool obscurePassword = true;
 
   Future<void> login() async {
     setState(() {
@@ -99,7 +182,7 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:3000/auth/login'),
+        Uri.parse('${ApiConfig.baseUrl}/auth/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': emailController.text,
@@ -135,7 +218,7 @@ class _LoginPageState extends State<LoginPage> {
       }
     } catch (e) {
       setState(() {
-        pesanError = 'Gagal konek ke server: $e';
+        pesanError = 'Gagal konek ke server (${ApiConfig.baseUrl}): $e';
       });
     }
 
@@ -145,13 +228,23 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings, color: Colors.grey),
+            tooltip: 'Pengaturan Server',
+            onPressed: () => showServerConfigDialog(context),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 24),
               Center(
                 child: Container(
                   width: 90,
@@ -178,8 +271,51 @@ class _LoginPageState extends State<LoginPage> {
               const Text('Password', style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600)),
               TextField(
                 controller: passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(hintText: 'Enter your password', border: UnderlineInputBorder()),
+                obscureText: obscurePassword,
+                decoration: InputDecoration(
+                  hintText: 'Enter your password',
+                  border: const UnderlineInputBorder(),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      obscurePassword ? Icons.visibility_off : Icons.visibility,
+                      color: Colors.grey.shade600,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        obscurePassword = !obscurePassword;
+                      });
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.center,
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ForgotPasswordPage(
+                          initialEmail: emailController.text,
+                        ),
+                      ),
+                    );
+                  },
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(50, 30),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    'Forgot Password?',
+                    style: TextStyle(
+                      color: Colors.blue.shade600,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
               ),
 
               if (pesanError.isNotEmpty) ...[
@@ -266,6 +402,7 @@ class _RegisterPageState extends State<RegisterPage> {
   String pesan = '';
   bool sukses = false;
   bool loading = false;
+  bool obscurePassword = true;
 
   Future<void> register() async {
     setState(() {
@@ -275,7 +412,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:3000/auth/register-staff'),
+        Uri.parse('${ApiConfig.baseUrl}/auth/register-staff'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'nama': namaController.text,
@@ -302,7 +439,7 @@ class _RegisterPageState extends State<RegisterPage> {
       }
     } catch (e) {
       setState(() {
-        pesan = 'Gagal konek ke server: $e';
+        pesan = 'Gagal konek ke server (${ApiConfig.baseUrl}): $e';
       });
     }
 
@@ -312,13 +449,23 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings, color: Colors.grey),
+            tooltip: 'Pengaturan Server',
+            onPressed: () => showServerConfigDialog(context),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 16),
               Center(
                 child: Container(
                   width: 90,
@@ -351,8 +498,22 @@ class _RegisterPageState extends State<RegisterPage> {
               const Text('Password', style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600)),
               TextField(
                 controller: passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(hintText: 'Enter your password', border: UnderlineInputBorder()),
+                obscureText: obscurePassword,
+                decoration: InputDecoration(
+                  hintText: 'Enter your password',
+                  border: const UnderlineInputBorder(),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      obscurePassword ? Icons.visibility_off : Icons.visibility,
+                      color: Colors.grey.shade600,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        obscurePassword = !obscurePassword;
+                      });
+                    },
+                  ),
+                ),
               ),
               const SizedBox(height: 16),
               const Text('Nomor Telepon (Opsional)', style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600)),
@@ -431,7 +592,164 @@ class _RegisterPageState extends State<RegisterPage> {
 }
 
 // ========================================================================
-// MAIN SHELL — bottom nav 5 tab
+// FORGOT PASSWORD PAGE
+// ========================================================================
+
+class ForgotPasswordPage extends StatefulWidget {
+  final String initialEmail;
+  const ForgotPasswordPage({super.key, this.initialEmail = ''});
+
+  @override
+  State<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
+}
+
+class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
+  late final TextEditingController emailController;
+  String pesan = '';
+  bool sukses = false;
+  bool loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    emailController = TextEditingController(text: widget.initialEmail);
+  }
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    super.dispose();
+  }
+
+  Future<void> kirimReset() async {
+    final email = emailController.text.trim();
+    if (email.isEmpty) {
+      setState(() {
+        sukses = false;
+        pesan = 'Silakan masukkan alamat email Anda';
+      });
+      return;
+    }
+
+    setState(() {
+      loading = true;
+      pesan = '';
+    });
+
+    await Future.delayed(const Duration(milliseconds: 800));
+
+    setState(() {
+      loading = false;
+      sukses = true;
+      pesan = 'Tautan atau instruksi pemulihan kata sandi telah dikirim ke $email. Silakan periksa kotak masuk atau hubungi manajer gudang.';
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 90,
+                  height: 90,
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Center(child: Text('🔐', style: TextStyle(fontSize: 40))),
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Text('Forgot Password?', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 6),
+              Text(
+                'Masukkan email akun Anda untuk mendapatkan tautan pemulihan kata sandi.',
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+              ),
+              const SizedBox(height: 28),
+
+              const Text('Email', style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600)),
+              TextField(
+                controller: emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(
+                  hintText: 'Enter your registered email',
+                  border: UnderlineInputBorder(),
+                ),
+              ),
+
+              if (pesan.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: sukses ? Colors.green.shade50 : Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    pesan,
+                    style: TextStyle(
+                      color: sukses ? Colors.green.shade700 : Colors.red.shade700,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 28),
+              SizedBox(
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: loading ? null : kirimReset,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue.shade600,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: loading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Text('Reset Password', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+              Center(
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(
+                    'Back to Sign in',
+                    style: TextStyle(color: Colors.blue.shade600, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ========================================================================
+// MAIN SHELL — bottom nav 3 tab
 // ========================================================================
 
 class MainShell extends StatefulWidget {
@@ -442,7 +760,7 @@ class MainShell extends StatefulWidget {
 }
 
 class _MainShellState extends State<MainShell> {
-  int currentIndex = 1; // default buka tab "Items"
+  int currentIndex = 0;
   List products = [];
   bool loadingProduk = true;
 
@@ -462,12 +780,14 @@ class _MainShellState extends State<MainShell> {
   Future<void> fetchProducts() async {
     setState(() => loadingProduk = true);
     try {
-      final response = await http.get(Uri.parse('http://localhost:3000/products'));
-      setState(() {
-        products = jsonDecode(response.body);
-      });
+      final response = await http.get(Uri.parse('${ApiConfig.baseUrl}/products'));
+      if (response.statusCode == 200) {
+        setState(() {
+          products = jsonDecode(response.body);
+        });
+      }
     } catch (e) {
-      // biarkan tetap list kosong, tampilan tab akan tunjukkin state kosong
+      // biarkan tetap list kosong jika gagal
     }
     setState(() => loadingProduk = false);
   }
@@ -535,7 +855,7 @@ class _MainShellState extends State<MainShell> {
     final tabs = [
       ItemsTab(products: products, loading: loadingProduk, onRefresh: fetchProducts),
       SearchTab(products: products, onScanTap: bukaScanner),
-      const MenuTab(),
+      MenuTab(onUrlChanged: fetchProducts),
     ];
 
     return Scaffold(
@@ -559,7 +879,7 @@ class _MainShellState extends State<MainShell> {
           ],
         ),
       ),
-      floatingActionButton: currentIndex == 1
+      floatingActionButton: currentIndex == 0
           ? FloatingActionButton(
               onPressed: tampilkanPilihanTambah,
               backgroundColor: Colors.grey.shade700,
@@ -582,8 +902,6 @@ class _MainShellState extends State<MainShell> {
   }
 }
 
-
-
 // ========================================================================
 // TAB: ITEMS
 // ========================================================================
@@ -603,7 +921,7 @@ class ItemsTab extends StatelessWidget {
 
     if (products.isEmpty) {
       return Center(
-        child: Text('Belum ada produk.', style: TextStyle(color: Colors.grey.shade400)),
+        child: Text('Belum ada produk atau gagal terhubung ke server.', style: TextStyle(color: Colors.grey.shade400)),
       );
     }
 
@@ -630,12 +948,12 @@ class ItemsTab extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(item['nama'], style: const TextStyle(fontWeight: FontWeight.w600)),
-                      Text('SKU: ${item['sku']}', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+                      Text(item['nama'] ?? '-', style: const TextStyle(fontWeight: FontWeight.w600)),
+                      Text('SKU: ${item['sku'] ?? '-'}', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
                     ],
                   ),
                 ),
-                Text('${item['stok_saat_ini']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                Text('${item['stok_saat_ini'] ?? 0}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               ],
             ),
           );
@@ -668,8 +986,8 @@ class _SearchTabState extends State<SearchTab> {
     final hasil = query.isEmpty
         ? []
         : widget.products.where((p) {
-            final nama = p['nama'].toString().toLowerCase();
-            final sku = p['sku'].toString().toLowerCase();
+            final nama = (p['nama'] ?? '').toString().toLowerCase();
+            final sku = (p['sku'] ?? '').toString().toLowerCase();
             final q = query.toLowerCase();
             return nama.contains(q) || sku.contains(q);
           }).toList();
@@ -730,12 +1048,12 @@ class _SearchTabState extends State<SearchTab> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(item['nama'], style: const TextStyle(fontWeight: FontWeight.w600)),
-                                  Text('SKU: ${item['sku']}', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+                                  Text(item['nama'] ?? '-', style: const TextStyle(fontWeight: FontWeight.w600)),
+                                  Text('SKU: ${item['sku'] ?? '-'}', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
                                 ],
                               ),
                             ),
-                            Text('${item['stok_saat_ini']}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                            Text('${item['stok_saat_ini'] ?? 0}', style: const TextStyle(fontWeight: FontWeight.bold)),
                           ],
                         ),
                       );
@@ -765,7 +1083,8 @@ class _SearchTabState extends State<SearchTab> {
 // ========================================================================
 
 class MenuTab extends StatefulWidget {
-  const MenuTab({super.key});
+  final VoidCallback? onUrlChanged;
+  const MenuTab({super.key, this.onUrlChanged});
 
   @override
   State<MenuTab> createState() => _MenuTabState();
@@ -832,6 +1151,30 @@ class _MenuTabState extends State<MenuTab> {
           const SizedBox(height: 24),
           const Divider(),
           ListTile(
+            leading: const Icon(Icons.history, color: Colors.blue),
+            title: const Text('Riwayat Transaksi'),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const RiwayatStafPage()),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.dns, color: Colors.orange),
+            title: const Text('Ubah URL Server'),
+            subtitle: Text(ApiConfig.baseUrl, style: const TextStyle(fontSize: 12)),
+            onTap: () {
+              showServerConfigDialog(
+                context,
+                onSaved: () {
+                  setState(() {});
+                  if (widget.onUrlChanged != null) widget.onUrlChanged!();
+                },
+              );
+            },
+          ),
+          ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
             title: const Text('Logout', style: TextStyle(color: Colors.red)),
             onTap: logout,
@@ -864,9 +1207,17 @@ class _RiwayatStafPageState extends State<RiwayatStafPage> {
   }
 
   Future<void> fetchRiwayat() async {
-    final response = await http.get(Uri.parse('http://localhost:3000/transactions/recent'));
+    try {
+      final response = await http.get(Uri.parse('${ApiConfig.baseUrl}/transactions/recent'));
+      if (response.statusCode == 200) {
+        setState(() {
+          riwayat = jsonDecode(response.body);
+        });
+      }
+    } catch (e) {
+      // biarkan riwayat kosong
+    }
     setState(() {
-      riwayat = jsonDecode(response.body);
       loading = false;
     });
   }
@@ -901,8 +1252,8 @@ class _RiwayatStafPageState extends State<RiwayatStafPage> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(t['nama'], style: const TextStyle(fontWeight: FontWeight.w600)),
-                                Text('${t['nama_staf']} • ${t['jumlah']} unit', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+                                Text(t['nama'] ?? '-', style: const TextStyle(fontWeight: FontWeight.w600)),
+                                Text('${t['nama_staf'] ?? '-'} • ${t['jumlah'] ?? 0} unit', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
                               ],
                             ),
                           ),
@@ -920,15 +1271,20 @@ class _RiwayatStafPageState extends State<RiwayatStafPage> {
 // ========================================================================
 
 Future<String?> cariProdukValid(String skuInput) async {
-  final response = await http.get(Uri.parse('http://localhost:3000/products'));
-  final List produk = jsonDecode(response.body);
+  try {
+    final response = await http.get(Uri.parse('${ApiConfig.baseUrl}/products'));
+    if (response.statusCode == 200) {
+      final List produk = jsonDecode(response.body);
+      final skuDicari = skuInput.trim().toUpperCase();
 
-  final skuDicari = skuInput.trim().toUpperCase();
-
-  for (final p in produk) {
-    if (p['sku'].toString().toUpperCase() == skuDicari) {
-      return p['sku'];
+      for (final p in produk) {
+        if (p['sku'].toString().toUpperCase() == skuDicari) {
+          return p['sku'];
+        }
+      }
     }
+  } catch (e) {
+    // Return null jika ada kendala jaringan
   }
   return null;
 }
@@ -1113,7 +1469,7 @@ class _TransaksiPageState extends State<TransaksiPage> {
       final token = prefs.getString('token');
 
       final response = await http.post(
-        Uri.parse('http://localhost:3000/transactions'),
+        Uri.parse('${ApiConfig.baseUrl}/transactions'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -1140,7 +1496,7 @@ class _TransaksiPageState extends State<TransaksiPage> {
       }
     } catch (e) {
       setState(() {
-        pesan = 'Tidak dapat terhubung ke server: $e';
+        pesan = 'Tidak dapat terhubung ke server (${ApiConfig.baseUrl}): $e';
       });
     }
   }
