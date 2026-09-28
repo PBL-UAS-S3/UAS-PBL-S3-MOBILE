@@ -446,11 +446,10 @@ class _MainShellState extends State<MainShell> {
   List products = [];
   bool loadingProduk = true;
 
-  final titles = ['Items', 'Search', 'Notifications', 'Menu'];
+  final titles = ['Items', 'Search', 'Menu'];
   final subtitles = [
     'Daftar produk gudang',
     'Cari produk atau scan',
-    'Pemberitahuan terbaru',
     'Profil & pengaturan akun',
   ];
 
@@ -536,7 +535,6 @@ class _MainShellState extends State<MainShell> {
     final tabs = [
       ItemsTab(products: products, loading: loadingProduk, onRefresh: fetchProducts),
       SearchTab(products: products, onScanTap: bukaScanner),
-      const NotificationsTab(),
       const MenuTab(),
     ];
 
@@ -577,7 +575,6 @@ class _MainShellState extends State<MainShell> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.inventory_2_outlined), label: 'Items'),
           BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
-          BottomNavigationBarItem(icon: Icon(Icons.notifications_outlined), label: 'Notifications'),
           BottomNavigationBarItem(icon: Icon(Icons.menu), label: 'Menu'),
         ],
       ),
@@ -759,28 +756,6 @@ class _SearchTabState extends State<SearchTab> {
           ),
         ),
       ],
-    );
-  }
-}
-
-// ========================================================================
-// TAB: NOTIFICATIONS
-// ========================================================================
-
-class NotificationsTab extends StatelessWidget {
-  const NotificationsTab({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.notifications_none, size: 64, color: Colors.grey.shade300),
-          const SizedBox(height: 12),
-          Text('Belum ada notifikasi', style: TextStyle(color: Colors.grey.shade400)),
-        ],
-      ),
     );
   }
 }
