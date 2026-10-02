@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 // ========================================================================
 // API CONFIGURATION (PENGATURAN URL SERVER DINAMIS)
@@ -1093,10 +1094,18 @@ class MenuTab extends StatefulWidget {
 class _MenuTabState extends State<MenuTab> {
   String nama = '';
 
+  String? namaGudang;
+  String? alamatGudang;
+  String? teleponGudang;
+  double? latGudang;
+  double? lonGudang;
+  bool loadingAlamat = true;
+
   @override
   void initState() {
     super.initState();
     muatNama();
+    muatAlamatGudang();
   }
 
   Future<void> muatNama() async {
@@ -1104,6 +1113,33 @@ class _MenuTabState extends State<MenuTab> {
     setState(() {
       nama = prefs.getString('nama') ?? 'Staf';
     });
+  }
+
+  Future<void> muatAlamatGudang() async {
+    try {
+      final response = await http.get(Uri.parse('${ApiConfig.baseUrl}/pengaturan'));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          namaGudang = data['nama_gudang'];
+          alamatGudang = data['alamat'];
+          teleponGudang = data['telepon'];
+          latGudang = data['latitude'] != null ? double.tryParse(data['latitude'].toString()) : null;
+          lonGudang = data['longitude'] != null ? double.tryParse(data['longitude'].toString()) : null;
+        });
+      }
+    } catch (e) {
+      // biarkan kosong jika gagal, kartu akan menampilkan pesan belum tersedia
+    }
+    setState(() => loadingAlamat = false);
+  }
+
+  Future<void> bukaDiMaps() async {
+    if (latGudang == null || lonGudang == null) return;
+    final uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$latGudang,$lonGudang');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 
   String get inisial {
@@ -1126,7 +1162,7 @@ class _MenuTabState extends State<MenuTab> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1148,7 +1184,65 @@ class _MenuTabState extends State<MenuTab> {
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
+
+          // Kartu Alamat Gudang (read-only, hanya Manager yang bisa ubah lewat web)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: Colors.grey.shade200),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: loadingAlamat
+                ? const Center(child: Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ))
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.location_on, color: Colors.deepOrange.shade400, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            namaGudang != null && namaGudang!.isNotEmpty ? namaGudang! : 'Alamat Gudang',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        (alamatGudang != null && alamatGudang!.isNotEmpty)
+                            ? alamatGudang!
+                            : 'Alamat belum diatur oleh Manager.',
+                        style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                      ),
+                      if (teleponGudang != null && teleponGudang!.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text('Telepon: $teleponGudang', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                      ],
+                      if (latGudang != null && lonGudang != null) ...[
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: bukaDiMaps,
+                            icon: const Icon(Icons.map_outlined, size: 18),
+                            label: const Text('Buka di Google Maps'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.deepOrange.shade400,
+                              side: BorderSide(color: Colors.deepOrange.shade200),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+          ),
+
+          const SizedBox(height: 16),
           const Divider(),
           ListTile(
             leading: const Icon(Icons.history, color: Colors.blue),
@@ -1170,6 +1264,7 @@ class _MenuTabState extends State<MenuTab> {
                 onSaved: () {
                   setState(() {});
                   if (widget.onUrlChanged != null) widget.onUrlChanged!();
+                  muatAlamatGudang();
                 },
               );
             },
