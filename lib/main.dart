@@ -12,13 +12,11 @@ import 'package:url_launcher/url_launcher.dart';
 class ApiConfig {
   static String baseUrl = 'http://localhost:3000';
 
-  // Memuat URL server yang tersimpan di SharedPreferences saat aplikasi dibuka
   static Future<void> loadBaseUrl() async {
     final prefs = await SharedPreferences.getInstance();
     baseUrl = prefs.getString('server_url') ?? 'http://localhost:3000';
   }
 
-  // Menyimpan URL server baru secara permanen
   static Future<void> setBaseUrl(String newUrl) async {
     String formatted = newUrl.trim();
     if (formatted.isNotEmpty) {
@@ -35,7 +33,6 @@ class ApiConfig {
   }
 }
 
-// Dialog Popup untuk mengubah URL server kapan saja
 void showServerConfigDialog(BuildContext context, {VoidCallback? onSaved}) {
   final controller = TextEditingController(text: ApiConfig.baseUrl);
   showDialog(
@@ -85,6 +82,34 @@ void showServerConfigDialog(BuildContext context, {VoidCallback? onSaved}) {
   );
 }
 
+// Widget logo yang dipakai berulang — gambar kardus dari assets
+class LogoStockin extends StatelessWidget {
+  final double ukuran;
+  const LogoStockin({super.key, this.ukuran = 90});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: ukuran,
+      height: ukuran,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(ukuran * 0.18),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(ukuran * 0.18),
+        child: Image.asset(
+          'assets/images/logo.png',
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => Container(
+            color: Colors.blue.shade50,
+            child: const Center(child: Text('📦', style: TextStyle(fontSize: 40))),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await ApiConfig.loadBaseUrl();
@@ -101,6 +126,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      title: 'Stockin',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         scaffoldBackgroundColor: Colors.white,
@@ -246,18 +272,12 @@ class _LoginPageState extends State<LoginPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Center(
-                child: Container(
-                  width: 90,
-                  height: 90,
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Center(child: Text('📦', style: TextStyle(fontSize: 40))),
-                ),
+              const Center(child: LogoStockin()),
+              const SizedBox(height: 14),
+              const Center(
+                child: Text('Stockin', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 18),
               const Text('Welcome Back!', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
               Text('Sign in to Your account.', style: TextStyle(color: Colors.grey.shade600)),
@@ -467,18 +487,12 @@ class _RegisterPageState extends State<RegisterPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Center(
-                child: Container(
-                  width: 90,
-                  height: 90,
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Center(child: Text('📦', style: TextStyle(fontSize: 40))),
-                ),
+              const Center(child: LogoStockin()),
+              const SizedBox(height: 14),
+              const Center(
+                child: Text('Stockin', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 18),
               const Text('Create an account', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
               Text('Daftar sebagai Staf Gudang.', style: TextStyle(color: Colors.grey.shade600)),
@@ -866,10 +880,18 @@ class _MainShellState extends State<MainShell> {
             Container(
               width: double.infinity,
               color: Colors.grey.shade100,
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Row(
+                    children: [
+                      LogoStockin(ukuran: 28),
+                      const SizedBox(width: 8),
+                      const Text('Stockin', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
                   Text(titles[currentIndex], style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 2),
                   Text(subtitles[currentIndex], style: TextStyle(color: Colors.grey.shade600)),
@@ -1245,12 +1267,54 @@ class _MenuTabState extends State<MenuTab> {
           const SizedBox(height: 16),
           const Divider(),
           ListTile(
+            leading: const Icon(Icons.person_outline, color: Colors.blue),
+            title: const Text('Profil Saya'),
+            subtitle: const Text('Ubah nama, telepon, dan password'),
+            onTap: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ProfilStafPage()),
+              );
+              muatNama();
+            },
+          ),
+          ListTile(
             leading: const Icon(Icons.history, color: Colors.blue),
             title: const Text('Riwayat Transaksi'),
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const RiwayatStafPage()),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.help_outline, color: Colors.teal),
+            title: const Text('Pusat Bantuan (FAQ)'),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const BantuanPage()),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.mail_outline, color: Colors.teal),
+            title: const Text('Hubungi Kami'),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const HubungiKamiPage()),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.description_outlined, color: Colors.teal),
+            title: const Text('Ketentuan & Kebijakan'),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const KetentuanPage()),
               );
             },
           ),
@@ -1275,6 +1339,464 @@ class _MenuTabState extends State<MenuTab> {
             onTap: logout,
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ========================================================================
+// PROFIL STAF PAGE
+// ========================================================================
+
+class ProfilStafPage extends StatefulWidget {
+  const ProfilStafPage({super.key});
+
+  @override
+  State<ProfilStafPage> createState() => _ProfilStafPageState();
+}
+
+class _ProfilStafPageState extends State<ProfilStafPage> {
+  final namaController = TextEditingController();
+  final teleponController = TextEditingController();
+  String email = '';
+
+  final passwordLamaController = TextEditingController();
+  final passwordBaruController = TextEditingController();
+  final konfirmasiController = TextEditingController();
+
+  bool loading = true;
+  bool savingProfil = false;
+  bool savingPassword = false;
+  String pesanProfil = '';
+  String suksesProfil = '';
+  String pesanPassword = '';
+  String suksesPassword = '';
+
+  @override
+  void initState() {
+    super.initState();
+    muatProfil();
+  }
+
+  Future<String?> ambilToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('token');
+  }
+
+  Future<void> muatProfil() async {
+    setState(() => loading = true);
+    try {
+      final token = await ambilToken();
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/auth/profil'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        namaController.text = data['nama'] ?? '';
+        teleponController.text = data['telepon'] ?? '';
+        setState(() => email = data['email'] ?? '');
+      }
+    } catch (e) {
+      // biarkan kosong jika gagal
+    }
+    setState(() => loading = false);
+  }
+
+  Future<void> simpanProfil() async {
+    setState(() {
+      savingProfil = true;
+      pesanProfil = '';
+      suksesProfil = '';
+    });
+    try {
+      final token = await ambilToken();
+      final response = await http.put(
+        Uri.parse('${ApiConfig.baseUrl}/auth/profil'),
+        headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
+        body: jsonEncode({'nama': namaController.text, 'telepon': teleponController.text}),
+      );
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('nama', namaController.text);
+        setState(() => suksesProfil = 'Profil berhasil disimpan');
+      } else {
+        setState(() => pesanProfil = data['error'] ?? 'Gagal menyimpan profil');
+      }
+    } catch (e) {
+      setState(() => pesanProfil = 'Tidak dapat terhubung ke server');
+    }
+    setState(() => savingProfil = false);
+  }
+
+  Future<void> simpanPassword() async {
+    setState(() {
+      pesanPassword = '';
+      suksesPassword = '';
+    });
+
+    if (passwordLamaController.text.isEmpty ||
+        passwordBaruController.text.isEmpty ||
+        konfirmasiController.text.isEmpty) {
+      setState(() => pesanPassword = 'Semua kolom wajib diisi');
+      return;
+    }
+    if (passwordBaruController.text.length < 6) {
+      setState(() => pesanPassword = 'Password baru minimal 6 karakter');
+      return;
+    }
+    if (passwordBaruController.text != konfirmasiController.text) {
+      setState(() => pesanPassword = 'Konfirmasi password tidak sama');
+      return;
+    }
+
+    setState(() => savingPassword = true);
+    try {
+      final token = await ambilToken();
+      final response = await http.put(
+        Uri.parse('${ApiConfig.baseUrl}/auth/ganti-password'),
+        headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
+        body: jsonEncode({
+          'password_lama': passwordLamaController.text,
+          'password_baru': passwordBaruController.text,
+        }),
+      );
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        setState(() => suksesPassword = 'Password berhasil diubah');
+        passwordLamaController.clear();
+        passwordBaruController.clear();
+        konfirmasiController.clear();
+      } else {
+        setState(() => pesanPassword = data['error'] ?? 'Gagal mengubah password');
+      }
+    } catch (e) {
+      setState(() => pesanPassword = 'Tidak dapat terhubung ke server');
+    }
+    setState(() => savingPassword = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Profil Saya')),
+      body: loading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text('Data Diri', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 12),
+                  const Text('Nama Lengkap', style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600)),
+                  TextField(controller: namaController, decoration: const InputDecoration(border: UnderlineInputBorder())),
+                  const SizedBox(height: 14),
+                  const Text('Email', style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600)),
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey))),
+                    child: Text(email, style: TextStyle(color: Colors.grey.shade600)),
+                  ),
+                  const SizedBox(height: 14),
+                  const Text('Nomor Telepon', style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600)),
+                  TextField(
+                    controller: teleponController,
+                    decoration: const InputDecoration(hintText: '08xx-xxxx-xxxx', border: UnderlineInputBorder()),
+                  ),
+
+                  if (pesanProfil.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Text(pesanProfil, style: const TextStyle(color: Colors.red, fontSize: 13)),
+                  ],
+                  if (suksesProfil.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Text(suksesProfil, style: const TextStyle(color: Colors.green, fontSize: 13)),
+                  ],
+
+                  const SizedBox(height: 18),
+                  SizedBox(
+                    height: 46,
+                    child: ElevatedButton(
+                      onPressed: savingProfil ? null : simpanProfil,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue.shade600,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      child: Text(savingProfil ? 'Menyimpan...' : 'Simpan Perubahan'),
+                    ),
+                  ),
+
+                  const SizedBox(height: 32),
+                  const Divider(),
+                  const SizedBox(height: 12),
+                  const Text('Ganti Password', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 12),
+
+                  const Text('Password Lama', style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600)),
+                  TextField(controller: passwordLamaController, obscureText: true, decoration: const InputDecoration(border: UnderlineInputBorder())),
+                  const SizedBox(height: 14),
+                  const Text('Password Baru', style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600)),
+                  TextField(controller: passwordBaruController, obscureText: true, decoration: const InputDecoration(hintText: 'Minimal 6 karakter', border: UnderlineInputBorder())),
+                  const SizedBox(height: 14),
+                  const Text('Konfirmasi Password Baru', style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600)),
+                  TextField(controller: konfirmasiController, obscureText: true, decoration: const InputDecoration(border: UnderlineInputBorder())),
+
+                  if (pesanPassword.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Text(pesanPassword, style: const TextStyle(color: Colors.red, fontSize: 13)),
+                  ],
+                  if (suksesPassword.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Text(suksesPassword, style: const TextStyle(color: Colors.green, fontSize: 13)),
+                  ],
+
+                  const SizedBox(height: 18),
+                  SizedBox(
+                    height: 46,
+                    child: ElevatedButton(
+                      onPressed: savingPassword ? null : simpanPassword,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey.shade800,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      child: Text(savingPassword ? 'Menyimpan...' : 'Ubah Password'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+    );
+  }
+}
+
+// ========================================================================
+// PUSAT BANTUAN (FAQ) PAGE
+// ========================================================================
+
+class BantuanPage extends StatelessWidget {
+  const BantuanPage({super.key});
+
+  static const List<Map<String, String>> faq = [
+    {
+      'q': 'Bagaimana cara mencatat barang masuk/keluar?',
+      'a': 'Buka tab Items, tekan tombol "+", lalu pilih Scan Barcode atau Input Manual, masukkan jumlah dan jenis transaksi (masuk/keluar), lalu simpan.',
+    },
+    {
+      'q': 'Kenapa SKU saya dibilang tidak ditemukan?',
+      'a': 'Pastikan SKU yang di-scan/ketik sudah terdaftar di Master Data oleh Manager. Coba refresh daftar produk di tab Items dengan menarik layar ke bawah.',
+    },
+    {
+      'q': 'Apakah saya bisa mengedit atau menghapus produk?',
+      'a': 'Tidak. Mengubah atau menghapus data produk hanya bisa dilakukan Manager lewat web dashboard.',
+    },
+    {
+      'q': 'Lupa password, bagaimana solusinya?',
+      'a': 'Fitur reset password mandiri untuk akun Staf belum tersedia. Hubungi Manager gudang kamu untuk dibantu reset.',
+    },
+    {
+      'q': 'Kenapa aplikasi mobile ini tidak bisa menambah produk baru?',
+      'a': 'Karena aplikasi mobile memang khusus untuk pencatatan transaksi oleh Staf. Penambahan produk baru dilakukan Manager lewat web dashboard.',
+    },
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Pusat Bantuan')),
+      body: ListView.separated(
+        padding: const EdgeInsets.all(16),
+        itemCount: faq.length,
+        separatorBuilder: (context, index) => const SizedBox(height: 10),
+        itemBuilder: (context, index) {
+          final item = faq[index];
+          return Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: Colors.grey.shade200),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: ExpansionTile(
+              title: Text(item['q']!, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+              childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              expandedCrossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(item['a']!, style: TextStyle(color: Colors.grey.shade700, fontSize: 13)),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+// ========================================================================
+// HUBUNGI KAMI PAGE
+// ========================================================================
+
+class HubungiKamiPage extends StatefulWidget {
+  const HubungiKamiPage({super.key});
+
+  @override
+  State<HubungiKamiPage> createState() => _HubungiKamiPageState();
+}
+
+class _HubungiKamiPageState extends State<HubungiKamiPage> {
+  final pesanController = TextEditingController();
+  bool loading = false;
+  String pesanError = '';
+  String sukses = '';
+
+  Future<void> kirim() async {
+    setState(() {
+      pesanError = '';
+      sukses = '';
+    });
+
+    if (pesanController.text.trim().isEmpty) {
+      setState(() => pesanError = 'Pesan tidak boleh kosong');
+      return;
+    }
+
+    setState(() => loading = true);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+
+      final response = await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/keluhan'),
+        headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
+        body: jsonEncode({'pesan': pesanController.text}),
+      );
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 201) {
+        setState(() {
+          sukses = data['message'] ?? 'Pesan berhasil dikirim';
+          pesanController.clear();
+        });
+      } else {
+        setState(() => pesanError = data['error'] ?? 'Gagal mengirim pesan');
+      }
+    } catch (e) {
+      setState(() => pesanError = 'Tidak dapat terhubung ke server');
+    }
+    setState(() => loading = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Hubungi Kami')),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text('Laporkan kendala, bug, atau masukan untuk tim kami.', style: TextStyle(color: Colors.grey)),
+            const SizedBox(height: 16),
+            TextField(
+              controller: pesanController,
+              maxLines: 8,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                hintText: 'Jelaskan kendala yang kamu alami...',
+              ),
+            ),
+            if (pesanError.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(pesanError, style: const TextStyle(color: Colors.red, fontSize: 13)),
+            ],
+            if (sukses.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(sukses, style: const TextStyle(color: Colors.green, fontSize: 13)),
+            ],
+            const SizedBox(height: 18),
+            SizedBox(
+              height: 48,
+              child: ElevatedButton.icon(
+                onPressed: loading ? null : kirim,
+                icon: const Icon(Icons.send, size: 18),
+                label: Text(loading ? 'Mengirim...' : 'Kirim Pesan'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue.shade600,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ========================================================================
+// KETENTUAN & KEBIJAKAN PAGE
+// ========================================================================
+
+class KetentuanPage extends StatefulWidget {
+  const KetentuanPage({super.key});
+
+  @override
+  State<KetentuanPage> createState() => _KetentuanPageState();
+}
+
+class _KetentuanPageState extends State<KetentuanPage> {
+  bool tabPrivasi = true;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Ketentuan & Kebijakan')),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: ChoiceChip(
+                    label: const Text('Kebijakan Privasi'),
+                    selected: tabPrivasi,
+                    onSelected: (v) => setState(() => tabPrivasi = true),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ChoiceChip(
+                    label: const Text('Syarat Ketentuan'),
+                    selected: !tabPrivasi,
+                    onSelected: (v) => setState(() => tabPrivasi = false),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Text(
+                  tabPrivasi
+                      ? '1. Data yang Dikumpulkan.\nStockin menyimpan data akun (nama, email, nomor telepon), data produk, dan riwayat transaksi gudang yang kamu masukkan ke dalam sistem.\n\n'
+                        '2. Penggunaan Data.\nData digunakan untuk menjalankan fitur aplikasi, termasuk analisis AI Insight untuk rekomendasi restock. Data tidak dibagikan ke pihak ketiga di luar kebutuhan sistem (seperti Gemini API untuk analisis AI).\n\n'
+                        '3. Keamanan Data.\nPassword disimpan dalam bentuk terenkripsi (hash), dan akses ke data dibatasi berdasarkan peran (Manager/Staf).\n\n'
+                        '4. Perubahan Kebijakan.\nKebijakan ini dapat berubah sewaktu-waktu sesuai kebutuhan pengembangan aplikasi.'
+                      : '1. Penggunaan Layanan.\nAplikasi ini disediakan untuk membantu pengelolaan inventori gudang. Akun Manager bertanggung jawab atas keakuratan data yang dimasukkan.\n\n'
+                        '2. Peran Pengguna.\nAkun Manager hanya dapat diakses lewat web, dan akun Staf Gudang hanya dapat diakses lewat aplikasi mobile.\n\n'
+                        '3. Rekomendasi AI.\nRekomendasi restock dari AI bersifat saran berdasarkan data historis, keputusan akhir pembelian tetap berada di tangan Manager.\n\n'
+                        '4. Batasan Tanggung Jawab.\nPengembang tidak bertanggung jawab atas kerugian yang timbul dari kesalahan input data oleh pengguna.',
+                  style: TextStyle(color: Colors.grey.shade700, height: 1.5, fontSize: 13),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
