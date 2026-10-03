@@ -1,12 +1,16 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiConfig {
-  static String baseUrl = 'http://localhost:3000';
+  /// Mendapatkan default URL sesuai platform (Web -> localhost, Emulator/Android -> 10.0.2.2)
+  static String get defaultUrl => kIsWeb ? 'http://localhost:3000' : 'http://10.0.2.2:3000';
+
+  static String baseUrl = defaultUrl;
 
   static Future<void> loadBaseUrl() async {
     final prefs = await SharedPreferences.getInstance();
-    baseUrl = prefs.getString('server_url') ?? 'http://localhost:3000';
+    baseUrl = prefs.getString('server_url') ?? defaultUrl;
   }
 
   static Future<void> setBaseUrl(String newUrl) async {
@@ -36,16 +40,16 @@ void showServerConfigDialog(BuildContext context, {VoidCallback? onSaved}) {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Masukkan IP/URL Server Backend (contoh: http://localhost:3000 atau http://10.0.2.2:3000):',
-              style: TextStyle(fontSize: 13, color: Colors.grey),
+            Text(
+              'Masukkan IP/URL Server Backend (Default platform: ${ApiConfig.defaultUrl}):',
+              style: const TextStyle(fontSize: 13, color: Colors.grey),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: controller,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: 'http://localhost:3000',
+              decoration: InputDecoration(
+                border: const OutlineInputBorder(),
+                hintText: ApiConfig.defaultUrl,
               ),
             ),
           ],
