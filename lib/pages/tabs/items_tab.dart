@@ -359,9 +359,9 @@ class _PromoCarouselState extends State<_PromoCarousel> {
     {
       'badge': 'Stokmu',
       'judul': 'Terpantau Otomatis\nStockin',
-      'bg': Color(0xFFFDE9D6),
+      'bg': AppColors.primarySoft,
       'icon': Icons.inventory_2,
-      'iconColor': Color(0xFFFDBA74),
+      'iconColor': Color(0xFF93C5FD),
       'badgeColor': AppColors.success,
       'badgeBg': Color(0x2616A34A),
     },
@@ -381,7 +381,7 @@ class _PromoCarouselState extends State<_PromoCarousel> {
       'icon': Icons.qr_code_scanner,
       'iconColor': Color(0xFF86EFAC),
       'badgeColor': AppColors.primaryDarkText,
-      'badgeBg': Color(0x26F2842F),
+      'badgeBg': Color(0x261E3A8A),
     },
   ];
 

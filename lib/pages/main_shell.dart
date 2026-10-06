@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
 import '../widgets/bottom_nav_pill.dart';
 import '../helpers/products_helper.dart';
 import 'tabs/items_tab.dart';
@@ -62,7 +63,7 @@ class _MainShellState extends State<MainShell> {
                     style: TextStyle(fontSize: 12, color: Colors.grey.shade500, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 12),
                 ListTile(
-                  leading: CircleAvatar(backgroundColor: Colors.orange.shade50, child: const Icon(Icons.keyboard, color: Colors.deepOrange)),
+                  leading: CircleAvatar(backgroundColor: AppColors.primarySoft, child: const Icon(Icons.keyboard, color: AppColors.primary)),
                   title: const Text('Input Manual'),
                   subtitle: const Text('Ketik SKU produk sendiri'),
                   onTap: () {
@@ -71,7 +72,7 @@ class _MainShellState extends State<MainShell> {
                   },
                 ),
                 ListTile(
-                  leading: CircleAvatar(backgroundColor: Colors.orange.shade50, child: const Icon(Icons.qr_code_scanner, color: Colors.deepOrange)),
+                  leading: CircleAvatar(backgroundColor: AppColors.primarySoft, child: const Icon(Icons.qr_code_scanner, color: AppColors.primary)),
                   title: const Text('Scan Barcode'),
                   subtitle: const Text('Pakai kamera HP'),
                   onTap: () {

@@ -125,7 +125,7 @@ class _SearchTabState extends State<SearchTab> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [AppColors.primary, Color(0xFFDD6F1B)],
+                colors: [AppColors.primary, AppColors.primaryDark],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),

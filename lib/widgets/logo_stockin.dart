@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/app_theme.dart';
 
 class LogoStockin extends StatelessWidget {
   final double ukuran;
@@ -16,7 +17,7 @@ class LogoStockin extends StatelessWidget {
         errorBuilder: (context, error, stackTrace) => Container(
           width: ukuran,
           height: ukuran,
-          color: Colors.orange.shade50,
+          color: AppColors.primarySoft,
           child: const Center(child: Text('📦', style: TextStyle(fontSize: 40))),
         ),
       ),
