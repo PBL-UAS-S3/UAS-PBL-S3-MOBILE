@@ -1,12 +1,12 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 
 import '../../config/api_config.dart';
 import '../../theme/app_theme.dart';
-import '../produk_detail_page.dart';
+import '../products/barang_rusak_page.dart';
+import '../products/produk_detail_page.dart';
 
-enum _FilterStok { semua, menipis, aman }
+enum _FilterStok { semua, aman, menipis, rusak }
 
 class ItemsTab extends StatefulWidget {
   final List products;
@@ -29,10 +29,28 @@ class ItemsTab extends StatefulWidget {
 class _ItemsTabState extends State<ItemsTab> {
   _FilterStok filter = _FilterStok.semua;
 
+  int _getInt(dynamic val) {
+    if (val is int) return val;
+    return int.tryParse(val?.toString() ?? '0') ?? 0;
+  }
+
   bool _menipis(Map item) {
-    final stok = item['stok_saat_ini'] ?? 0;
-    final min = item['stok_minimum'] ?? 0;
+    final stok = _getInt(item['stok_saat_ini']);
+    final min = _getInt(item['stok_minimum']);
     return stok <= min;
+  }
+
+  bool _adaRusak(Map item) {
+    final rusak = _getInt(item['stok_rusak']);
+    return rusak > 0;
+  }
+
+  int get totalUnitRusak {
+    int total = 0;
+    for (final p in widget.products) {
+      if (p is Map) total += _getInt(p['stok_rusak']);
+    }
+    return total;
   }
 
   List get produkTersaring {
@@ -41,6 +59,8 @@ class _ItemsTabState extends State<ItemsTab> {
         return widget.products.where((p) => _menipis(p)).toList();
       case _FilterStok.aman:
         return widget.products.where((p) => !_menipis(p)).toList();
+      case _FilterStok.rusak:
+        return widget.products.where((p) => _adaRusak(p)).toList();
       case _FilterStok.semua:
         return widget.products;
     }
@@ -62,6 +82,8 @@ class _ItemsTabState extends State<ItemsTab> {
     if (widget.loading && widget.products.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
+
+    final totalRusak = totalUnitRusak;
 
     return Stack(
       children: [
@@ -105,32 +127,92 @@ class _ItemsTabState extends State<ItemsTab> {
               ),
               const SizedBox(height: 18),
 
-              // Carousel iklan/promo — geser otomatis
+              // Carousel promo
               _PromoCarousel(onMulaiSekarang: widget.onRefresh),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
 
-              // Filter pill
-              Row(
-                children: [
-                  _chip(
-                    'Semua',
-                    filter == _FilterStok.semua,
-                    () => setState(() => filter = _FilterStok.semua),
+              // Banner notifikasi Barang Rusak Tersortir
+              if (totalRusak > 0) ...[
+                GestureDetector(
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const BarangRusakPage()),
+                    );
+                    widget.onRefresh();
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF2F2),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: Colors.red.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade100,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 18),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Tersortir $totalRusak unit barang rusak',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.red.shade900,
+                            ),
+                          ),
+                        ),
+                        const Text(
+                          'Kelola',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.red),
+                        ),
+                        const Icon(Icons.chevron_right, size: 16, color: Colors.red),
+                      ],
+                    ),
                   ),
-                  const SizedBox(width: 8),
-                  _chip(
-                    'Menipis',
-                    filter == _FilterStok.menipis,
-                    () => setState(() => filter = _FilterStok.menipis),
-                  ),
-                  const SizedBox(width: 8),
-                  _chip(
-                    'Aman',
-                    filter == _FilterStok.aman,
-                    () => setState(() => filter = _FilterStok.aman),
-                  ),
-                ],
+                ),
+                const SizedBox(height: 14),
+              ],
+
+              // Filter pills (Semua, Aman, Menipis, Barang Rusak)
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _chip(
+                      'Semua',
+                      filter == _FilterStok.semua,
+                      () => setState(() => filter = _FilterStok.semua),
+                    ),
+                    const SizedBox(width: 8),
+                    _chip(
+                      'Aman',
+                      filter == _FilterStok.aman,
+                      () => setState(() => filter = _FilterStok.aman),
+                    ),
+                    const SizedBox(width: 8),
+                    _chip(
+                      'Menipis',
+                      filter == _FilterStok.menipis,
+                      () => setState(() => filter = _FilterStok.menipis),
+                    ),
+                    const SizedBox(width: 8),
+                    _chip(
+                      'Barang Rusak',
+                      filter == _FilterStok.rusak,
+                      () => setState(() => filter = _FilterStok.rusak),
+                      isDanger: true,
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 16),
 
@@ -139,7 +221,9 @@ class _ItemsTabState extends State<ItemsTab> {
                   padding: const EdgeInsets.symmetric(vertical: 40),
                   child: Center(
                     child: Text(
-                      'Tidak ada produk.',
+                      filter == _FilterStok.rusak
+                          ? 'Tidak ada barang rusak tersortir.'
+                          : 'Tidak ada produk.',
                       style: TextStyle(color: Colors.grey.shade400),
                     ),
                   ),
@@ -162,17 +246,18 @@ class _ItemsTabState extends State<ItemsTab> {
     );
   }
 
-  Widget _chip(String label, bool aktif, VoidCallback onTap) {
+  Widget _chip(String label, bool aktif, VoidCallback onTap, {bool isDanger = false}) {
+    Color activeBg = isDanger ? Colors.red.shade600 : AppColors.success;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: aktif ? AppColors.success : Colors.white,
+          color: aktif ? activeBg : Colors.white,
           borderRadius: BorderRadius.circular(30),
           border: Border.all(
-            color: aktif ? AppColors.success : AppColors.border,
+            color: aktif ? activeBg : (isDanger ? Colors.red.shade200 : AppColors.border),
           ),
         ),
         child: Text(
@@ -180,7 +265,7 @@ class _ItemsTabState extends State<ItemsTab> {
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: aktif ? Colors.white : AppColors.textGrey,
+            color: aktif ? Colors.white : (isDanger ? Colors.red.shade700 : AppColors.textGrey),
           ),
         ),
       ),
@@ -189,27 +274,34 @@ class _ItemsTabState extends State<ItemsTab> {
 
   Widget _kartuProduk(Map item) {
     final menipis = _menipis(item);
+    final stokRusak = _getInt(item['stok_rusak']);
     final gambar = item['gambar'];
     final kategori =
         (item['kategori'] != null && item['kategori'].toString().isNotEmpty)
-        ? item['kategori'].toString()
-        : null;
+            ? item['kategori'].toString()
+            : null;
     final satuan =
         (item['satuan'] != null && item['satuan'].toString().isNotEmpty)
-        ? item['satuan'].toString()
-        : null;
+            ? item['satuan'].toString()
+            : null;
 
     return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => ProdukDetailPage(item: item)),
-      ),
+      onTap: () async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => ProdukDetailPage(item: item)),
+        );
+        widget.onRefresh();
+      },
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
-          border: Border.all(color: AppColors.border),
+          border: Border.all(
+            color: stokRusak > 0 ? Colors.red.shade200 : AppColors.border,
+            width: stokRusak > 0 ? 1.2 : 1,
+          ),
           borderRadius: BorderRadius.circular(14),
         ),
         child: Row(
@@ -306,6 +398,27 @@ class _ItemsTabState extends State<ItemsTab> {
                     ),
                   ),
                 ),
+                if (stokRusak > 0) ...[
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 7,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade100,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '$stokRusak Rusak',
+                      style: TextStyle(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red.shade900,
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ],
@@ -339,7 +452,7 @@ class _ItemsTabState extends State<ItemsTab> {
 }
 
 // ========================================================================
-// CAROUSEL IKLAN — geser otomatis tiap 4 detik
+// CAROUSEL PROMO — geser otomatis tiap 4 detik
 // ========================================================================
 
 class _PromoCarousel extends StatefulWidget {
@@ -366,13 +479,13 @@ class _PromoCarouselState extends State<_PromoCarousel> {
       'badgeBg': Color(0x2616A34A),
     },
     {
-      'badge': 'AI Insight',
-      'judul': 'Rekomendasi Restock\ndari Gemini AI',
-      'bg': Color(0xFFE0ECFE),
-      'icon': Icons.auto_awesome,
-      'iconColor': Color(0xFF93C5FD),
-      'badgeColor': Color(0xFF2563EB),
-      'badgeBg': Color(0x262563EB),
+      'badge': 'Sortir Rusak',
+      'judul': 'Pemisahan Barang\nRusak & Karantina',
+      'bg': Color(0xFFFEE2E2),
+      'icon': Icons.build_circle_outlined,
+      'iconColor': Color(0xFFFCA5A5),
+      'badgeColor': Color(0xFFDC2626),
+      'badgeBg': Color(0x26DC2626),
     },
     {
       'badge': 'Scan Cepat',
@@ -411,7 +524,7 @@ class _PromoCarouselState extends State<_PromoCarousel> {
     return Column(
       children: [
         SizedBox(
-          height: 160, // 👈 Ditingkatkan dari 148 ke 160
+          height: 160,
           child: PageView.builder(
             controller: _controller,
             itemCount: _slide.length,

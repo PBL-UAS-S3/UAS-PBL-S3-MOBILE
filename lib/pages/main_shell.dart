@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import '../services/product_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/bottom_nav_pill.dart';
-import '../helpers/products_helper.dart';
+import 'products/barang_rusak_page.dart';
 import 'tabs/items_tab.dart';
 import 'tabs/search_tab.dart';
 import 'tabs/menu_tab.dart';
-import 'scanner_page.dart';
-import 'input_manual_page.dart';
+import 'transactions/scanner_page.dart';
+import 'transactions/input_manual_page.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -29,9 +30,9 @@ class _MainShellState extends State<MainShell> {
   Future<void> fetchProducts() async {
     setState(() => loadingProduk = true);
     try {
-      final hasil = await fetchProductsFromServer();
+      final hasil = await ProductService.fetchProducts();
       setState(() => products = hasil);
-    } catch (e) {
+    } catch (_) {
       // biarkan tetap list kosong jika gagal
     }
     setState(() => loadingProduk = false);
@@ -47,6 +48,11 @@ class _MainShellState extends State<MainShell> {
     fetchProducts();
   }
 
+  Future<void> bukaBarangRusak() async {
+    await Navigator.push(context, MaterialPageRoute(builder: (context) => const BarangRusakPage()));
+    fetchProducts();
+  }
+
   void tampilkanPilihanTambah() {
     showModalBottomSheet(
       context: context,
@@ -59,13 +65,15 @@ class _MainShellState extends State<MainShell> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('CATAT TRANSAKSI',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade500, fontWeight: FontWeight.bold)),
+                Text(
+                  'AKSI INVENTORI GUDANG',
+                  style: TextStyle(fontSize: 11.5, color: Colors.grey.shade500, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                ),
                 const SizedBox(height: 12),
                 ListTile(
                   leading: CircleAvatar(backgroundColor: AppColors.primarySoft, child: const Icon(Icons.keyboard, color: AppColors.primary)),
                   title: const Text('Input Manual'),
-                  subtitle: const Text('Ketik SKU produk sendiri'),
+                  subtitle: const Text('Ketik SKU untuk catat transaksi'),
                   onTap: () {
                     Navigator.pop(context);
                     bukaInputManual();
@@ -74,10 +82,19 @@ class _MainShellState extends State<MainShell> {
                 ListTile(
                   leading: CircleAvatar(backgroundColor: AppColors.primarySoft, child: const Icon(Icons.qr_code_scanner, color: AppColors.primary)),
                   title: const Text('Scan Barcode'),
-                  subtitle: const Text('Pakai kamera HP'),
+                  subtitle: const Text('Pakai kamera HP scan barcode SKU'),
                   onTap: () {
                     Navigator.pop(context);
                     bukaScanner();
+                  },
+                ),
+                ListTile(
+                  leading: const CircleAvatar(backgroundColor: Color(0xFFFFECEC), child: Icon(Icons.build_circle_outlined, color: Colors.red)),
+                  title: const Text('Kelola Barang Rusak Tersortir'),
+                  subtitle: const Text('Pemisahan, sortir, afkir, atau pulihkan barang cacat'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    bukaBarangRusak();
                   },
                 ),
               ],

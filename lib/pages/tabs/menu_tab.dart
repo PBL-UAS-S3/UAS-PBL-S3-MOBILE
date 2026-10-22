@@ -5,12 +5,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../config/api_config.dart';
 import '../../theme/app_theme.dart';
-import '../login_or_register_gate.dart';
-import '../profil_staf_page.dart';
-import '../riwayat_staf_page.dart';
-import '../bantuan_page.dart';
-import '../hubungi_kami_page.dart';
-import '../ketentuan_page.dart';
+import '../auth/login_or_register_gate.dart';
+import '../profile/profil_staf_page.dart';
+import '../transactions/riwayat_staf_page.dart';
+import '../products/barang_rusak_page.dart';
+import '../info/bantuan_page.dart';
+import '../info/hubungi_kami_page.dart';
+import '../info/ketentuan_page.dart';
 
 class MenuTab extends StatefulWidget {
   const MenuTab({super.key});
@@ -133,6 +134,10 @@ class _MenuTabState extends State<MenuTab> {
           adaKoordinat: latGudang != null && lonGudang != null,
           onBukaMaps: bukaDiMaps,
         ),
+        const SizedBox(height: 10),
+        _menuRow(Icons.build_circle_outlined, Colors.red.shade700, 'Barang Rusak Tersortir', 'Kelola, sortir, afkir, atau pulihkan barang rusak', () {
+          Navigator.push(context, MaterialPageRoute(builder: (context) => const BarangRusakPage()));
+        }),
         const SizedBox(height: 22),
 
         _labelSeksi('Akun'),

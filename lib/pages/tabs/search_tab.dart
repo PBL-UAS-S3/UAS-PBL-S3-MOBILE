@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../config/api_config.dart';
 import '../../theme/app_theme.dart';
-import '../produk_detail_page.dart';
+import '../products/produk_detail_page.dart';
 
 class SearchTab extends StatefulWidget {
   final List products;
@@ -306,6 +306,20 @@ class _SearchTabState extends State<SearchTab> {
                     style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: menipis ? AppColors.danger : AppColors.success),
                   ),
                 ),
+                if ((int.tryParse(item['stok_rusak']?.toString() ?? '0') ?? 0) > 0) ...[
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade100,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '${item['stok_rusak']} Rusak',
+                      style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Colors.red.shade900),
+                    ),
+                  ),
+                ],
               ],
             ),
           ],
