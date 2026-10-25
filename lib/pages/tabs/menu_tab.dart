@@ -113,7 +113,7 @@ class _MenuTabState extends State<MenuTab> {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
       children: [
         const Text('Menu', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
         const SizedBox(height: 4),

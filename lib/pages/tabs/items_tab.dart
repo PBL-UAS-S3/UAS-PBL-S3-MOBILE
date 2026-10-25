@@ -90,7 +90,7 @@ class _ItemsTabState extends State<ItemsTab> {
         RefreshIndicator(
           onRefresh: widget.onRefresh,
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
             children: [
               Row(
                 children: [
@@ -229,7 +229,9 @@ class _ItemsTabState extends State<ItemsTab> {
                   ),
                 )
               else
-                ...produkTersaring.map((item) => _kartuProduk(item)),
+                ...produkTersaring.asMap().entries.map(
+                  (e) => _kartuProduk(e.value, isLast: e.key == produkTersaring.length - 1),
+                ),
             ],
           ),
         ),
@@ -272,7 +274,7 @@ class _ItemsTabState extends State<ItemsTab> {
     );
   }
 
-  Widget _kartuProduk(Map item) {
+  Widget _kartuProduk(Map item, {bool isLast = false}) {
     final menipis = _menipis(item);
     final stokRusak = _getInt(item['stok_rusak']);
     final gambar = item['gambar'];
@@ -294,7 +296,7 @@ class _ItemsTabState extends State<ItemsTab> {
         widget.onRefresh();
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
+        margin: EdgeInsets.only(bottom: isLast ? 0 : 10),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,

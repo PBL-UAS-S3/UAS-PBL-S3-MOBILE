@@ -278,19 +278,15 @@ class _BarangRusakPageState extends State<BarangRusakPage> {
                 children: [
                   // Kartu Ringkasan Barang Rusak
                   Container(
-                    padding: const EdgeInsets.all(18),
+                    padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Colors.red.shade700, Colors.red.shade900],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(20),
+                      color: const Color(0xFF1E3A8A),
+                      borderRadius: BorderRadius.circular(22),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.red.withOpacity(0.25),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
+                          color: const Color(0xFF1E3A8A).withOpacity(0.35),
+                          blurRadius: 18,
+                          offset: const Offset(0, 6),
                         ),
                       ],
                     ),
@@ -299,58 +295,86 @@ class _BarangRusakPageState extends State<BarangRusakPage> {
                       children: [
                         Row(
                           children: [
+                            // Kotak icon
                             Container(
-                              padding: const EdgeInsets.all(8),
+                              padding: const EdgeInsets.all(9),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(10),
+                                color: Colors.white.withOpacity(0.18),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
                               ),
-                              child: const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 20),
+                              // Segitiga warning putih
+                              child: const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 22),
                             ),
-                            const SizedBox(width: 10),
-                            const Text(
-                              'Area Karantina & Sortir',
-                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14),
+                            const SizedBox(width: 12),
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Area Karantina & Sortir',
+                                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15),
+                                  ),
+                                  Text(
+                                    'Barang rusak menunggu tindakan',
+                                    style: TextStyle(color: Colors.white70, fontSize: 11),
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text('Total Unit Rusak', style: TextStyle(color: Colors.white70, fontSize: 11)),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    '$totalUnitRusak Unit',
-                                    style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
-                                  ),
-                                ],
+                        const SizedBox(height: 20),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('Total Unit Rusak', style: TextStyle(color: Colors.white70, fontSize: 11)),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '$totalUnitRusak Unit',
+                                      style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w900),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                            Container(width: 1, height: 35, color: Colors.white24),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text('Jenis Barang', style: TextStyle(color: Colors.white70, fontSize: 11)),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    '${products.where((p) => _getInt(p['stok_rusak']) > 0).length} SKU',
-                                    style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
-                                  ),
-                                ],
+                              Container(width: 1, height: 40, color: Colors.white24),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('Jenis Barang', style: TextStyle(color: Colors.white70, fontSize: 11)),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${products.where((p) => _getInt(p['stok_rusak']) > 0).length} SKU',
+                                      style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w900),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                         const SizedBox(height: 12),
-                        Text(
-                          'Estimasi Nilai Rusak: ${_formatRupiah(totalEstimasiRugi)}',
-                          style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 12, fontWeight: FontWeight.w500),
+                        Row(
+                          children: [
+                            const Icon(Icons.monetization_on_outlined, color: Colors.white60, size: 14),
+                            const SizedBox(width: 5),
+                            Text(
+                              'Estimasi Kerugian: ${_formatRupiah(totalEstimasiRugi)}',
+                              style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w600),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -460,123 +484,203 @@ class _BarangRusakPageState extends State<BarangRusakPage> {
     final totalRugi = stokRusak * harga;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.red.shade200, width: 1.2),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: gambar != null
-                    ? Image.network(
-                        '${ApiConfig.baseUrl}$gambar',
-                        width: 52,
-                        height: 52,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => _placeholderThumb(),
-                      )
-                    : _placeholderThumb(),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item['nama'] ?? '-',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14.5, color: AppColors.textDark),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'SKU: ${item['sku'] ?? '-'}',
-                      style: TextStyle(color: Colors.grey.shade500, fontSize: 11.5, fontFamily: 'monospace'),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Estimasi Kerugian: ${_formatRupiah(totalRugi)}',
-                      style: TextStyle(color: Colors.red.shade700, fontSize: 12, fontWeight: FontWeight.w600),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.red.shade100,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  '$stokRusak Rusak',
-                  style: TextStyle(color: Colors.red.shade900, fontWeight: FontWeight.bold, fontSize: 12),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          const Divider(height: 1),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Text(
-                'Stok Layak: $stokLayak ${item['satuan'] ?? 'unit'}',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade700, fontWeight: FontWeight.w500),
-              ),
-              const Spacer(),
-              // Tombol Tambah Pemisahan
-              OutlinedButton.icon(
-                onPressed: () {
-                  PisahBarangRusakDialog.show(
-                    context,
-                    item: item,
-                    onSuccess: muatData,
-                  );
-                },
-                icon: const Icon(Icons.add, size: 14),
-                label: const Text('Sortir Lagi', style: TextStyle(fontSize: 11.5)),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.red.shade700,
-                  side: BorderSide(color: Colors.red.shade300),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                ),
-              ),
-              const SizedBox(width: 8),
-              // Tombol Tindakan
-              ElevatedButton(
-                onPressed: () => _tampilkanDialogAksi(item),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                ),
-                child: const Text('Tindakan', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold)),
-              ),
-            ],
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.07),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
           ),
         ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Strip aksen oranye-merah di kiri
+              Container(
+                width: 5,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFFD97706), Color(0xFFEF4444)],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Thumbnail lebih besar
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: gambar != null
+                                ? Image.network(
+                                    '${ApiConfig.baseUrl}$gambar',
+                                    width: 68,
+                                    height: 68,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) => _placeholderThumb(),
+                                  )
+                                : _placeholderThumb(),
+                          ),
+                          const SizedBox(width: 13),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  item['nama'] ?? '-',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 15,
+                                    color: AppColors.textDark,
+                                    height: 1.25,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  'SKU: ${item['sku'] ?? '-'}',
+                                  style: TextStyle(
+                                    color: Colors.grey.shade400,
+                                    fontSize: 11.5,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  'Estimasi Kerugian: ${_formatRupiah(totalRugi)}',
+                                  style: const TextStyle(
+                                    color: Color(0xFFDC2626),
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          // Badge rusak
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade50,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: Colors.red.shade200, width: 0.8),
+                            ),
+                            child: Text(
+                              '$stokRusak Rusak',
+                              style: TextStyle(
+                                color: Colors.red.shade800,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        height: 1,
+                        color: Colors.grey.shade100,
+                      ),
+                      const SizedBox(height: 10),
+                      // Chip stok layak
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: AppColors.successBg,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'Layak: $stokLayak ${item['satuan'] ?? 'unit'}',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            color: AppColors.success,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Tombol aksi (lebih besar)
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () {
+                                PisahBarangRusakDialog.show(
+                                  context,
+                                  item: item,
+                                  onSuccess: muatData,
+                                );
+                              },
+                              icon: const Icon(Icons.add, size: 18),
+                              label: const Text(
+                                'Sortir Lagi',
+                                style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFFD97706),
+                                side: const BorderSide(color: Color(0xFFFBBF24), width: 1.4),
+                                minimumSize: const Size(0, 44),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () => _tampilkanDialogAksi(item),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: Colors.white,
+                                minimumSize: const Size(0, 44),
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                elevation: 2,
+                              ),
+                              child: const Text(
+                                'Tindakan',
+                                style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
   Widget _placeholderThumb() {
     return Container(
-      width: 52,
-      height: 52,
-      color: Colors.red.shade50,
-      child: const Icon(Icons.build_circle_outlined, color: Colors.red, size: 24),
+      width: 68,
+      height: 68,
+      decoration: BoxDecoration(
+        color: Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(Icons.build_circle_outlined, color: Colors.orange.shade300, size: 28),
     );
   }
 }

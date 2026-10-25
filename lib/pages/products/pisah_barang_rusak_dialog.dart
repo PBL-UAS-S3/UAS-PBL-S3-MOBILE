@@ -27,30 +27,16 @@ class PisahBarangRusakDialog extends StatefulWidget {
 
 class _PisahBarangRusakDialogState extends State<PisahBarangRusakDialog> {
   final jumlahController = TextEditingController();
+  final alasanController = TextEditingController();
   final catatanController = TextEditingController();
 
-  final List<String> daftarAlasan = const [
-    'Kemasan Rusak / Bocor',
-    'Pecah / Penyok',
-    'Kadaluarsa / Expired',
-    'Cacat Pabrik / Defect',
-    'Terkena Air / Lembab',
-    'Lainnya',
-  ];
-
-  late String alasanDipilih;
   bool loading = false;
   String pesanError = '';
 
   @override
-  void initState() {
-    super.initState();
-    alasanDipilih = daftarAlasan.first;
-  }
-
-  @override
   void dispose() {
     jumlahController.dispose();
+    alasanController.dispose();
     catatanController.dispose();
     super.dispose();
   }
@@ -77,6 +63,12 @@ class _PisahBarangRusakDialogState extends State<PisahBarangRusakDialog> {
       return;
     }
 
+    final alasan = alasanController.text.trim();
+    if (alasan.isEmpty) {
+      setState(() => pesanError = 'Alasan kerusakan wajib diisi');
+      return;
+    }
+
     setState(() {
       loading = true;
       pesanError = '';
@@ -86,7 +78,7 @@ class _PisahBarangRusakDialogState extends State<PisahBarangRusakDialog> {
     final res = await ProductService.pisahkanBarangRusak(
       sku: sku,
       jumlah: jumlah,
-      alasan: alasanDipilih,
+      alasan: alasan,
       keterangan: catatanController.text.trim(),
     );
 
@@ -232,28 +224,16 @@ class _PisahBarangRusakDialogState extends State<PisahBarangRusakDialog> {
               'Alasan Kerusakan / Kondisi',
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark),
             ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: daftarAlasan.map((alasan) {
-                final aktif = alasan == alasanDipilih;
-                return ChoiceChip(
-                  label: Text(alasan),
-                  selected: aktif,
-                  onSelected: (val) {
-                    if (val) setState(() => alasanDipilih = alasan);
-                  },
-                  selectedColor: Colors.red.shade100,
-                  labelStyle: TextStyle(
-                    fontSize: 12,
-                    fontWeight: aktif ? FontWeight.bold : FontWeight.normal,
-                    color: aktif ? Colors.red.shade900 : Colors.grey.shade700,
-                  ),
-                  side: BorderSide(color: aktif ? Colors.red : AppColors.border),
-                  backgroundColor: Colors.white,
-                );
-              }).toList(),
+            const SizedBox(height: 6),
+            TextField(
+              controller: alasanController,
+              textCapitalization: TextCapitalization.sentences,
+              minLines: 2,
+              maxLines: 3,
+              decoration: InputDecoration(
+                hintText: 'Tulis kenapa barang ini rusak',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
             ),
             const SizedBox(height: 14),
 

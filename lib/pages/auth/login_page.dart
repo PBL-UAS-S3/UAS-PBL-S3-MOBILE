@@ -18,6 +18,7 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
+  final FocusNode passwordFocus = FocusNode();
   String pesanError = '';
   bool loading = false;
   bool obscurePassword = true;
@@ -54,10 +55,21 @@ class _LoginPageState extends State<LoginPage> {
         if (!mounted) return;
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const MainShell()));
       } else {
-        setState(() => pesanError = data['error'] ?? 'Email atau password salah');
+        setState(() {
+          pesanError = data['error'] ?? 'Email atau password salah';
+          loading = false;
+        });
+        // Kembalikan fokus ke field password agar bisa langsung diedit
+        Future.delayed(Duration.zero, () => passwordFocus.requestFocus());
+        return;
       }
     } catch (e) {
-      setState(() => pesanError = 'Gagal konek ke server (${ApiConfig.baseUrl}): $e');
+      setState(() {
+        pesanError = 'Gagal konek ke server (${ApiConfig.baseUrl}): $e';
+        loading = false;
+      });
+      Future.delayed(Duration.zero, () => passwordFocus.requestFocus());
+      return;
     }
 
     setState(() => loading = false);
@@ -157,6 +169,7 @@ class _LoginPageState extends State<LoginPage> {
                           const SizedBox(height: 8),
                           _buildInputField(
                             controller: passwordController,
+                            focusNode: passwordFocus,
                             hintText: 'Enter your password',
                             prefixIcon: Icons.lock_outline,
                             isPassword: true,
@@ -322,6 +335,7 @@ class _LoginPageState extends State<LoginPage> {
     required TextEditingController controller,
     required String hintText,
     required IconData prefixIcon,
+    FocusNode? focusNode,
     bool isPassword = false,
     TextInputType? keyboardType,
   }) {
@@ -340,6 +354,7 @@ class _LoginPageState extends State<LoginPage> {
       ),
       child: TextField(
         controller: controller,
+        focusNode: focusNode,
         obscureText: isPassword ? obscurePassword : false,
         keyboardType: keyboardType,
         style: const TextStyle(fontSize: 15, color: Color(0xFF1A1D23)),

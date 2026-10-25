@@ -116,7 +116,7 @@ class _SearchTabState extends State<SearchTab> {
     final produkTerbaru = widget.products.take(6).toList();
 
     return ListView(
-      padding: const EdgeInsets.only(bottom: 110),
+      padding: EdgeInsets.zero,
       children: [
         // Ajakan scan
         GestureDetector(
@@ -187,7 +187,9 @@ class _SearchTabState extends State<SearchTab> {
         if (produkTerbaru.isNotEmpty) ...[
           const Text('Produk Terbaru', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, color: AppColors.textDark)),
           const SizedBox(height: 10),
-          ...produkTerbaru.map((item) => _kartuProduk(item)),
+          ...produkTerbaru.asMap().entries.map(
+            (e) => _kartuProduk(e.value, isLast: e.key == produkTerbaru.length - 1),
+          ),
         ] else
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 40),
@@ -227,14 +229,14 @@ class _SearchTabState extends State<SearchTab> {
 
   Widget _daftarHasil(List hasil) {
     return ListView.separated(
-      padding: const EdgeInsets.only(bottom: 110),
+      padding: EdgeInsets.zero,
       itemCount: hasil.length,
       separatorBuilder: (context, index) => const SizedBox(height: 10),
-      itemBuilder: (context, index) => _kartuProduk(hasil[index]),
+      itemBuilder: (context, index) => _kartuProduk(hasil[index], isLast: index == hasil.length - 1),
     );
   }
 
-  Widget _kartuProduk(Map item) {
+  Widget _kartuProduk(Map item, {bool isLast = false}) {
     final menipis = _menipis(item);
     final gambar = item['gambar'];
     final kategori = (item['kategori'] != null && item['kategori'].toString().isNotEmpty) ? item['kategori'].toString() : null;
@@ -243,7 +245,7 @@ class _SearchTabState extends State<SearchTab> {
     return GestureDetector(
       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ProdukDetailPage(item: item))),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
+        margin: EdgeInsets.only(bottom: isLast ? 0 : 10),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
