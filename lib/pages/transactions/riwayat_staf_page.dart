@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../config/api_config.dart';
 import '../../theme/app_theme.dart';
 
@@ -25,7 +26,12 @@ class _RiwayatStafPageState extends State<RiwayatStafPage> {
   Future<void> fetchRiwayat() async {
     setState(() => loading = true);
     try {
-      final response = await http.get(Uri.parse('${ApiConfig.baseUrl}/transactions/recent'));
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/transactions/recent'),
+        headers: {if (token != null) 'Authorization': 'Bearer $token'},
+      );
       if (response.statusCode == 200) {
         setState(() => riwayat = jsonDecode(response.body));
       }

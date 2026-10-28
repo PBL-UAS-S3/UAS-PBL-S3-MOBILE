@@ -1,13 +1,13 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../services/product_service.dart';
 import '../theme/app_theme.dart';
-import '../widgets/bottom_nav_pill.dart';
-import 'products/barang_rusak_page.dart';
+import '../widgets/tekan_skala.dart';
 import 'tabs/items_tab.dart';
-import 'tabs/search_tab.dart';
 import 'tabs/menu_tab.dart';
-import 'transactions/scanner_page.dart';
+import 'tabs/search_tab.dart';
 import 'transactions/input_manual_page.dart';
+import 'transactions/scanner_page.dart';
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -39,83 +39,207 @@ class _MainShellState extends State<MainShell> {
   }
 
   Future<void> bukaScanner() async {
-    await Navigator.push(context, MaterialPageRoute(builder: (context) => const ScannerPage()));
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const ScannerPage()),
+    );
     fetchProducts();
   }
 
   Future<void> bukaInputManual() async {
-    await Navigator.push(context, MaterialPageRoute(builder: (context) => const InputManualPage()));
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const InputManualPage()),
+    );
     fetchProducts();
   }
 
-  Future<void> bukaBarangRusak() async {
-    await Navigator.push(context, MaterialPageRoute(builder: (context) => const BarangRusakPage()));
-    fetchProducts();
+  void _pilihTab(int i) {
+    if (i == currentIndex) return;
+    FocusManager.instance.primaryFocus?.unfocus();
+    setState(() => currentIndex = i);
   }
 
-  void tampilkanPilihanTambah() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'AKSI INVENTORI GUDANG',
-                  style: TextStyle(fontSize: 11.5, color: Colors.grey.shade500, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+  Widget _itemNav(int index, IconData ikon, IconData ikonAktif, String label) {
+    final aktif = currentIndex == index;
+    final warna = aktif ? AppColors.primary : AppColors.textGrey;
+    const durasi = Duration(milliseconds: 220);
+
+    return Expanded(
+      child: TekanSkala(
+        skala: 0.9,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => _pilihTab(index),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AnimatedScale(
+                scale: aktif ? 1.12 : 1.0,
+                duration: durasi,
+                curve: Curves.easeOutBack,
+                child: TweenAnimationBuilder<Color?>(
+                  tween: ColorTween(end: warna),
+                  duration: durasi,
+                  builder: (context, c, _) =>
+                      Icon(aktif ? ikonAktif : ikon, size: 22, color: c),
                 ),
-                const SizedBox(height: 12),
-                ListTile(
-                  leading: CircleAvatar(backgroundColor: AppColors.primarySoft, child: const Icon(Icons.keyboard, color: AppColors.primary)),
-                  title: const Text('Input Manual'),
-                  subtitle: const Text('Ketik SKU untuk catat transaksi'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    bukaInputManual();
-                  },
+              ),
+              const SizedBox(height: 2),
+              AnimatedDefaultTextStyle(
+                duration: durasi,
+                style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: aktif ? FontWeight.w700 : FontWeight.w500,
+                  color: warna,
                 ),
-                ListTile(
-                  leading: CircleAvatar(backgroundColor: AppColors.primarySoft, child: const Icon(Icons.qr_code_scanner, color: AppColors.primary)),
-                  title: const Text('Scan Barcode'),
-                  subtitle: const Text('Pakai kamera HP scan barcode SKU'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    bukaScanner();
-                  },
-                ),
-                ListTile(
-                  leading: const CircleAvatar(backgroundColor: Color(0xFFFFECEC), child: Icon(Icons.build_circle_outlined, color: Colors.red)),
-                  title: const Text('Kelola Barang Rusak Tersortir'),
-                  subtitle: const Text('Pemisahan, sortir, afkir, atau pulihkan barang cacat'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    bukaBarangRusak();
-                  },
+                child: Text(label),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Navbar kaca: ramping, buram, pil penanda meluncur antartab
+  Widget _navKaca() {
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: 0,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(44, 0, 44, 10),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(30),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.10),
+                  blurRadius: 26,
+                  offset: const Offset(0, 10),
                 ),
               ],
             ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(30),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 26, sigmaY: 26),
+                child: Container(
+                  height: 58,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(30),
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.white.withOpacity(0.68),
+                        Colors.white.withOpacity(0.38),
+                      ],
+                    ),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.85),
+                      width: 1,
+                    ),
+                  ),
+                  child: Stack(
+                    children: [
+                      // pil penanda yang meluncur
+                      AnimatedAlign(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOutCubic,
+                        alignment: Alignment(currentIndex - 1.0, 0),
+                        child: FractionallySizedBox(
+                          widthFactor: 1 / 3,
+                          heightFactor: 1,
+                          child: Padding(
+                            padding: const EdgeInsets.all(5),
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          _itemNav(0, Icons.inventory_2_outlined, Icons.inventory_2, 'Barang'),
+                          _itemNav(1, Icons.search, Icons.search, 'Cari'),
+                          _itemNav(2, Icons.menu, Icons.menu, 'Menu'),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
-        );
-      },
+        ),
+      ),
+    );
+  }
+
+  // Semua tab tetap hidup (state terjaga), yang aktif memudar masuk
+  Widget _tabAnimasi(int i, Widget tab) {
+    final aktif = currentIndex == i;
+    final arah = i < currentIndex ? -0.04 : 0.04;
+
+    return Positioned.fill(
+      child: IgnorePointer(
+        ignoring: !aktif,
+        child: AnimatedSlide(
+          offset: aktif ? Offset.zero : Offset(arah, 0),
+          duration: const Duration(milliseconds: 280),
+          curve: Curves.easeOutCubic,
+          child: AnimatedOpacity(
+            opacity: aktif ? 1 : 0,
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOut,
+            child: tab,
+          ),
+        ),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final tabs = [
-      ItemsTab(products: products, loading: loadingProduk, onRefresh: fetchProducts, onTambah: tampilkanPilihanTambah),
-      SearchTab(products: products, onScanTap: bukaScanner),
+      ItemsTab(
+        products: products,
+        loading: loadingProduk,
+        onRefresh: fetchProducts,
+        onScanTap: bukaScanner,
+      ),
+      SearchTab(
+        products: products,
+        onScanTap: bukaScanner,
+        onInputManualTap: bukaInputManual,
+      ),
       const MenuTab(),
     ];
 
     return Scaffold(
-      body: SafeArea(child: IndexedStack(index: currentIndex, children: tabs)),
-      bottomNavigationBar: BottomNavPill(currentIndex: currentIndex, onTap: (i) => setState(() => currentIndex = i)),
+      backgroundColor: AppColors.bg,
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: SafeArea(
+              bottom: false,
+              child: Stack(
+                children: [
+                  for (int i = 0; i < tabs.length; i++) _tabAnimasi(i, tabs[i]),
+                ],
+              ),
+            ),
+          ),
+          _navKaca(),
+        ],
+      ),
     );
   }
 }

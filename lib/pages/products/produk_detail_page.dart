@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+
 import '../../config/api_config.dart';
 import '../../services/product_service.dart';
 import '../../theme/app_theme.dart';
+import '../../theme/status_stok.dart';
+import '../../widgets/baris_produk.dart';
 import '../transactions/transaksi_page.dart';
 import 'pisah_barang_rusak_dialog.dart';
 
@@ -22,54 +25,22 @@ class _ProdukDetailPageState extends State<ProdukDetailPage> {
     currentItem = Map.from(widget.item);
   }
 
-  int get _stokLayak {
-    final val = currentItem['stok_saat_ini'];
-    return val is int ? val : int.tryParse(val?.toString() ?? '0') ?? 0;
-  }
-
-  int get _stokRusak {
-    final val = currentItem['stok_rusak'];
-    return val is int ? val : int.tryParse(val?.toString() ?? '0') ?? 0;
-  }
-
-  int get _stokMinimum {
-    final val = currentItem['stok_minimum'];
-    return val is int ? val : int.tryParse(val?.toString() ?? '0') ?? 0;
-  }
-
+  int get _stokLayak => ambilInt(currentItem['stok_saat_ini']);
+  int get _stokRusak => ambilInt(currentItem['stok_rusak']);
+  int get _stokMinimum => ambilInt(currentItem['stok_minimum']);
   int get _totalFisik => _stokLayak + _stokRusak;
 
-  bool get _menipis => _stokLayak <= _stokMinimum;
+  StatusStok get _status => hitungStatusStok(currentItem);
 
-  bool get _perluDipantau => !_menipis && _stokLayak <= (_stokMinimum * 1.5);
-
-  String get _statusLabel {
-    if (_menipis) return 'Stok Menipis';
-    if (_perluDipantau) return 'Perlu Dipantau';
-    return 'Aman';
-  }
-
-  Color get _statusColor {
-    if (_menipis) return AppColors.danger;
-    if (_perluDipantau) return AppColors.warning;
-    return AppColors.success;
-  }
-
-  Color get _statusBg {
-    if (_menipis) return AppColors.dangerBg;
-    if (_perluDipantau) return AppColors.warningBg;
-    return AppColors.successBg;
-  }
-
-  String _formatRupiah(dynamic angka) {
-    final nilai = num.tryParse(angka?.toString() ?? '0') ?? 0;
-    final bagian = nilai.toInt().toString().split('').reversed.toList();
-    final hasil = <String>[];
-    for (int i = 0; i < bagian.length; i++) {
-      if (i != 0 && i % 3 == 0) hasil.add('.');
-      hasil.add(bagian[i]);
+  String get _labelStatus {
+    switch (_status) {
+      case StatusStok.habis:
+        return 'Stok habis';
+      case StatusStok.menipis:
+        return 'Stok menipis';
+      case StatusStok.aman:
+        return 'Stok aman';
     }
-    return 'Rp${hasil.reversed.join()}';
   }
 
   Future<void> _refreshDetail() async {
@@ -80,18 +51,33 @@ class _ProdukDetailPageState extends State<ProdukDetailPage> {
     }
   }
 
+  String _teks(dynamic nilai) {
+    final t = nilai?.toString() ?? '';
+    return t.isEmpty ? '-' : t;
+  }
+
   @override
   Widget build(BuildContext context) {
     final gambar = currentItem['gambar'];
     final hargaPerUnit = num.tryParse(currentItem['harga']?.toString() ?? '0') ?? 0;
+    final tampil = tampilanStatus(_status);
 
     return Scaffold(
       backgroundColor: AppColors.bg,
       appBar: AppBar(
-        backgroundColor: AppColors.bg,
+        backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text('Detail Produk', style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.bold)),
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
         iconTheme: const IconThemeData(color: AppColors.textDark),
+        title: const Text(
+          'Detail produk',
+          style: TextStyle(
+            color: AppColors.textDark,
+            fontWeight: FontWeight.w700,
+            fontSize: 17,
+          ),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -99,247 +85,265 @@ class _ProdukDetailPageState extends State<ProdukDetailPage> {
             tooltip: 'Segarkan',
           ),
         ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Divider(height: 1, color: AppColors.border),
+        ),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 30),
+        padding: const EdgeInsets.only(bottom: 32),
         children: [
-          Center(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: AspectRatio(
-                aspectRatio: 1,
-                child: Container(
-                  color: Colors.grey.shade100,
-                  child: gambar != null
-                      ? Image.network(
-                          '${ApiConfig.baseUrl}$gambar',
-                          width: double.infinity,
-                          height: double.infinity,
-                          fit: BoxFit.contain,
-                          errorBuilder: (context, error, stackTrace) => _placeholderBesar(),
-                        )
-                      : _placeholderBesar(),
+          // Foto penuh lebar
+          Container(
+            height: 240,
+            width: double.infinity,
+            color: Colors.grey.shade100,
+            child: gambar != null
+                ? Image.network(
+                    '${ApiConfig.baseUrl}$gambar',
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) => _placeholderBesar(),
+                  )
+                : _placeholderBesar(),
+          ),
+
+          // Nama, SKU, status
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  currentItem['nama']?.toString() ?? '-',
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textDark,
+                  ),
                 ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Text(
+                      'SKU ${currentItem['sku'] ?? '-'}',
+                      style: const TextStyle(
+                        color: AppColors.textGrey,
+                        fontSize: 13,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: tampil.warnaTeks,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      _labelStatus,
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: tampil.warnaTeks,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Divider(height: 1, color: AppColors.border),
+
+          // Angka stok
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: IntrinsicHeight(
+              child: Row(
+                children: [
+                  _kolomStok('Stok layak', '$_stokLayak', AppColors.textDark),
+                  VerticalDivider(width: 1, color: AppColors.border),
+                  _kolomStok(
+                    'Rusak',
+                    '$_stokRusak',
+                    _stokRusak > 0 ? tampilanRusak.warnaTeks : AppColors.textDark,
+                  ),
+                  VerticalDivider(width: 1, color: AppColors.border),
+                  _kolomStok('Minimum', '$_stokMinimum', AppColors.textGrey),
+                ],
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          Divider(height: 1, color: AppColors.border),
 
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(
-                  currentItem['nama'] ?? '-',
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textDark),
+          // Aksi
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      final res = await PisahBarangRusakDialog.show(
+                        context,
+                        item: currentItem,
+                        onSuccess: _refreshDetail,
+                      );
+                      if (res == true) _refreshDetail();
+                    },
+                    icon: const Icon(Icons.call_split, size: 18),
+                    label: const Text(
+                      'Pisahkan rusak',
+                      style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: tampilanRusak.warnaTeks,
+                      side: BorderSide(color: tampilanRusak.warnaTeks.withOpacity(0.5)),
+                      backgroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(color: _statusBg, borderRadius: BorderRadius.circular(20)),
-                child: Text(_statusLabel, style: TextStyle(color: _statusColor, fontSize: 12, fontWeight: FontWeight.w700)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'SKU: ${currentItem['sku'] ?? '-'}',
-            style: TextStyle(color: Colors.grey.shade500, fontSize: 13, fontFamily: 'monospace'),
-          ),
-          const SizedBox(height: 20),
-
-          // Kartu ringkasan stok (Layak, Rusak, Minimum)
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withOpacity(0.2),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      final sku = currentItem['sku']?.toString() ?? '';
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => TransaksiPage(sku: sku)),
+                      );
+                      _refreshDetail();
+                    },
+                    icon: const Icon(Icons.swap_horiz, size: 18),
+                    label: const Text(
+                      'Transaksi stok',
+                      style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
                 ),
               ],
+            ),
+          ),
+
+          // Informasi
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 22, 16, 8),
+            child: Text(
+              'INFORMASI',
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textGrey,
+                letterSpacing: 0.6,
+              ),
+            ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border(
+                top: BorderSide(color: AppColors.border),
+                bottom: BorderSide(color: AppColors.border),
+              ),
             ),
             child: Column(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('Stok Layak', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                          const SizedBox(height: 4),
-                          Text(
-                            '$_stokLayak',
-                            style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(width: 1, height: 36, color: Colors.white24),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('Stok Rusak Tersortir', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                          const SizedBox(height: 4),
-                          Text(
-                            '$_stokRusak',
-                            style: TextStyle(
-                              color: _stokRusak > 0 ? const Color(0xFFFCA5A5) : Colors.white,
-                              fontSize: 26,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                _barisInfo('Kategori', _teks(currentItem['kategori'])),
+                _barisInfo('Satuan', _teks(currentItem['satuan'])),
+                _barisInfo('Harga per unit', formatRp(hargaPerUnit)),
+                _barisInfo('Total fisik', '$_totalFisik unit'),
+                _barisInfo(
+                  'Nilai stok layak',
+                  formatRp(hargaPerUnit * _stokLayak),
+                  terakhir: _stokRusak == 0,
                 ),
-                const SizedBox(height: 14),
-                const Divider(height: 1, color: Colors.white24),
-                const SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Total Fisik: $_totalFisik unit',
-                      style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w600),
-                    ),
-                    Text(
-                      'Batas Min: $_stokMinimum unit',
-                      style: const TextStyle(color: Colors.white70, fontSize: 12),
-                    ),
-                  ],
-                ),
+                if (_stokRusak > 0)
+                  _barisInfo(
+                    'Estimasi kerugian rusak',
+                    formatRp(hargaPerUnit * _stokRusak),
+                    warnaNilai: tampilanRusak.warnaTeks,
+                    terakhir: true,
+                  ),
               ],
             ),
           ),
-          const SizedBox(height: 16),
-
-          // Tombol Aksi Cepat: Pisahkan Barang Rusak & Catat Transaksi
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () async {
-                    final res = await PisahBarangRusakDialog.show(
-                      context,
-                      item: currentItem,
-                      onSuccess: _refreshDetail,
-                    );
-                    if (res == true) _refreshDetail();
-                  },
-                  icon: const Icon(Icons.call_split, size: 18),
-                  label: const Text('Pisahkan Rusak', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red.shade600,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () async {
-                    final sku = currentItem['sku']?.toString() ?? '';
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => TransaksiPage(sku: sku)),
-                    );
-                    _refreshDetail();
-                  },
-                  icon: const Icon(Icons.swap_horiz, size: 18),
-                  label: const Text('Transaksi Stok', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-
-          const Text('Informasi Produk', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.textDark)),
-          const SizedBox(height: 10),
-
-          _baris(Icons.category_outlined, 'Kategori',
-              (currentItem['kategori'] != null && currentItem['kategori'].toString().isNotEmpty) ? currentItem['kategori'] : '-'),
-          _baris(Icons.straighten_outlined, 'Satuan',
-              (currentItem['satuan'] != null && currentItem['satuan'].toString().isNotEmpty) ? currentItem['satuan'] : '-'),
-          _baris(Icons.sell_outlined, 'Harga per Unit', _formatRupiah(hargaPerUnit)),
-          _baris(
-            Icons.account_balance_wallet_outlined,
-            'Total Nilai Stok Layak',
-            _formatRupiah(hargaPerUnit * _stokLayak),
-          ),
-          if (_stokRusak > 0)
-            _baris(
-              Icons.warning_amber_outlined,
-              'Estimasi Kerugian Stok Rusak',
-              _formatRupiah(hargaPerUnit * _stokRusak),
-              warnaNilai: Colors.red.shade700,
-            ),
         ],
       ),
     );
   }
 
   Widget _placeholderBesar() {
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      color: AppColors.primarySoft,
-      child: const Icon(Icons.inventory_2, color: AppColors.primary, size: 56),
+    return Center(
+      child: Icon(Icons.inventory_2_outlined, color: Colors.grey.shade400, size: 56),
     );
   }
 
-  Widget _baris(IconData icon, String label, String value, {Color? warnaNilai}) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: AppColors.border),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
+  Widget _kolomStok(String label, String nilai, Color warna) {
+    return Expanded(
+      child: Column(
         children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(color: AppColors.primarySoft, borderRadius: BorderRadius.circular(10)),
-            child: Icon(icon, size: 18, color: AppColors.primary),
+          Text(
+            nilai,
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: warna),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: warnaNilai ?? AppColors.textDark,
-                  ),
-                ),
-              ],
-            ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 12, color: AppColors.textGrey),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _barisInfo(
+    String label,
+    String nilai, {
+    Color? warnaNilai,
+    bool terakhir = false,
+  }) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(fontSize: 14, color: AppColors.textGrey),
+                ),
+              ),
+              Text(
+                nilai,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: warnaNilai ?? AppColors.textDark,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (!terakhir) Divider(height: 1, indent: 16, color: AppColors.border),
+      ],
     );
   }
 }

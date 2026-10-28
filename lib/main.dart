@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'config/api_config.dart';
 import 'theme/app_theme.dart';
-import 'pages/auth/login_page.dart';
+import 'pages/auth/onboarding_page.dart';
 import 'pages/main_shell.dart';
 
 void main() async {
@@ -48,7 +48,7 @@ class _AuthCheckPageState extends State<AuthCheckPage> {
     if (token != null && token.isNotEmpty) {
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const MainShell()));
     } else {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginPage()));
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const OnboardingPage()));
     }
   }
 

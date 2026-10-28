@@ -1,9 +1,11 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import '../../config/api_config.dart';
+
 import '../../theme/app_theme.dart';
-import '../../widgets/logo_stockin.dart';
+import '../../widgets/auth_widgets.dart';
+import 'login_page.dart';
+import 'verifikasi_email_page.dart';
+
+const int _minPassword = 8;
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -15,162 +17,137 @@ class RegisterPage extends StatefulWidget {
 class _RegisterPageState extends State<RegisterPage> {
   final namaController = TextEditingController();
   final emailController = TextEditingController();
-  final passwordController = TextEditingController();
   final teleponController = TextEditingController();
-  String pesan = '';
-  bool sukses = false;
+  final passwordController = TextEditingController();
+
+  String pesanError = '';
   bool loading = false;
-  bool obscurePassword = true;
+
+  @override
+  void dispose() {
+    namaController.dispose();
+    emailController.dispose();
+    teleponController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
+  // Kembali ke halaman masuk, sisakan hanya halaman paling bawah (tampilan awal)
+  void _keLogin({String info = ''}) {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => LoginPage(infoAwal: info)),
+      (route) => route.isFirst,
+    );
+  }
 
   Future<void> register() async {
-    setState(() {
-      loading = true;
-      pesan = '';
-    });
+    final nama = namaController.text.trim();
+    final email = emailController.text.trim();
 
-    try {
-      final response = await http.post(
-        Uri.parse('${ApiConfig.baseUrl}/auth/register-staff'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'nama': namaController.text,
-          'email': emailController.text,
-          'password': passwordController.text,
-          'telepon': teleponController.text,
-        }),
-      );
-
-      final data = jsonDecode(response.body);
-
-      if (response.statusCode == 201) {
-        setState(() {
-          sukses = true;
-          pesan = 'Akun berhasil dibuat! Silakan login.';
-        });
-        await Future.delayed(const Duration(seconds: 2));
-        if (!mounted) return;
-        Navigator.pop(context);
-      } else {
-        setState(() => pesan = data['error'] ?? 'Registrasi gagal');
-      }
-    } catch (e) {
-      setState(() => pesan = 'Gagal konek ke server (${ApiConfig.baseUrl}): $e');
+    if (nama.isEmpty || email.isEmpty || passwordController.text.isEmpty) {
+      setState(() => pesanError = 'Nama, email, dan password wajib diisi');
+      return;
+    }
+    if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]{2,}$').hasMatch(email)) {
+      setState(() => pesanError = 'Format email tidak valid');
+      return;
+    }
+    if (passwordController.text.length < _minPassword) {
+      setState(() => pesanError = 'Password minimal $_minPassword karakter');
+      return;
     }
 
+    setState(() {
+      loading = true;
+      pesanError = '';
+    });
+
+    final hasil = await kirimJson('/auth/register-staff', {
+      'nama': nama,
+      'email': email,
+      'password': passwordController.text,
+      'telepon': teleponController.text.trim(),
+    });
+
+    if (!mounted) return;
     setState(() => loading = false);
+
+    if (hasil.status != 201) {
+      setState(() => pesanError = hasil.error);
+      return;
+    }
+
+    // Akun dibuat, kode OTP sudah dikirim ke email
+    final berhasil = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => VerifikasiEmailPage(
+          email: (hasil.data['email'] ?? email.toLowerCase()).toString(),
+        ),
+      ),
+    );
+
+    if (berhasil == true && mounted) {
+      _keLogin(info: 'Akun siap dipakai. Silakan masuk.');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings, color: Colors.grey),
-            tooltip: 'Pengaturan Server',
-            onPressed: () => showServerConfigDialog(context),
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Center(child: LogoStockin()),
-              const SizedBox(height: 24),
-              const Text('Create an account', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              Text('Get started for free today..', style: TextStyle(color: Colors.grey.shade600)),
-              const SizedBox(height: 28),
-              const Text('Full Name', style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600)),
-              TextField(
-                controller: namaController,
-                decoration: const InputDecoration(hintText: 'Enter your full name', border: UnderlineInputBorder()),
-              ),
-              const SizedBox(height: 16),
-              const Text('Email', style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600)),
-              TextField(
-                controller: emailController,
-                decoration: const InputDecoration(hintText: 'Enter your email', border: UnderlineInputBorder()),
-              ),
-              const SizedBox(height: 16),
-              const Text('Password', style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600)),
-              TextField(
-                controller: passwordController,
-                obscureText: obscurePassword,
-                decoration: InputDecoration(
-                  hintText: 'Enter your password',
-                  border: const UnderlineInputBorder(),
-                  suffixIcon: IconButton(
-                    icon: Icon(obscurePassword ? Icons.visibility_off : Icons.visibility, color: Colors.grey.shade600),
-                    onPressed: () => setState(() => obscurePassword = !obscurePassword),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text('Nomor Telepon (Opsional)', style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600)),
-              TextField(
-                controller: teleponController,
-                decoration: const InputDecoration(hintText: '08xx-xxxx-xxxx', border: UnderlineInputBorder()),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Dengan membuat akun, kamu setuju akun ini terdaftar sebagai Staf Gudang.',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-              ),
-              if (pesan.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: sukses ? AppColors.successBg : AppColors.dangerBg,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(pesan, style: TextStyle(color: sukses ? AppColors.success : AppColors.danger, fontSize: 13)),
-                ),
-              ],
-              const SizedBox(height: 24),
-              SizedBox(
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: loading ? null : register,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  ),
-                  child: loading
-                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Text('Create Account', style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Center(
-                child: RichText(
-                  text: TextSpan(
-                    style: TextStyle(color: Colors.grey.shade600),
-                    children: [
-                      const TextSpan(text: 'Already have an account? '),
-                      WidgetSpan(
-                        alignment: PlaceholderAlignment.middle,
-                        child: GestureDetector(
-                          onTap: () => Navigator.pop(context),
-                          child: Text('Sign in', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+    return AuthScaffold(
+      judul: 'Buat akun',
+      subjudul: 'Daftar sebagai staf, lalu gabung ke gudang setelah masuk.',
+      tombolServer: true,
+      children: [
+        if (pesanError.isNotEmpty) AuthAlert(teks: pesanError),
+        AuthField(
+          controller: namaController,
+          label: 'Nama lengkap',
+          hint: 'Nama kamu',
+          icon: Icons.person_outline_rounded,
+          textCapitalization: TextCapitalization.words,
         ),
-      ),
+        const SizedBox(height: 18),
+        AuthField(
+          controller: emailController,
+          label: 'Email',
+          hint: 'nama@email.com',
+          helper: 'Gunakan email aktif, kode verifikasi akan dikirim ke sini.',
+          icon: Icons.mail_outline_rounded,
+          keyboardType: TextInputType.emailAddress,
+        ),
+        const SizedBox(height: 18),
+        AuthField(
+          controller: teleponController,
+          label: 'Nomor telepon (opsional)',
+          hint: '08xx-xxxx-xxxx',
+          icon: Icons.phone_outlined,
+          keyboardType: TextInputType.phone,
+        ),
+        const SizedBox(height: 18),
+        AuthField(
+          controller: passwordController,
+          label: 'Password',
+          hint: 'Minimal $_minPassword karakter',
+          icon: Icons.lock_outline_rounded,
+          isPassword: true,
+          onSubmitted: (_) => register(),
+        ),
+        const SizedBox(height: 14),
+        const Text(
+          'Setelah masuk, kamu bisa bergabung ke gudang lewat kode dari Manager. Manager akan menyetujui permintaanmu.',
+          style: TextStyle(fontSize: 12, color: AppColors.textGrey, height: 1.4),
+        ),
+        const SizedBox(height: 22),
+        AuthButton(label: 'Daftar', onPressed: register, loading: loading),
+        const SizedBox(height: 24),
+        AuthTautan(
+          teks: 'Sudah punya akun?',
+          aksi: 'Masuk',
+          onTap: () => _keLogin(),
+        ),
+      ],
     );
   }
 }

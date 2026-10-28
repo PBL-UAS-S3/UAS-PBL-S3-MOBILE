@@ -1,5 +1,4 @@
-import 'login_page.dart';
+import 'onboarding_page.dart';
 
-export 'login_page.dart';
-
-typedef LoginOrRegisterGate = LoginPage;
+// Jangan dihapus: dipakai main.dart dan menu_tab.dart
+typedef LoginOrRegisterGate = OnboardingPage;

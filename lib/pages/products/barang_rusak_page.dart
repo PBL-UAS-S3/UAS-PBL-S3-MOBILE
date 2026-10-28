@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../config/api_config.dart';
 import '../../services/product_service.dart';
 import '../../theme/app_theme.dart';
+import '../../theme/status_stok.dart';
 import 'pisah_barang_rusak_dialog.dart';
 import 'produk_detail_page.dart';
 
@@ -209,7 +210,7 @@ class _BarangRusakPageState extends State<BarangRusakPage> {
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: isBuang ? Colors.red : AppColors.success,
+                backgroundColor: isBuang ? tampilanHabis.warnaTeks : tampilanAman.warnaTeks,
                 foregroundColor: Colors.white,
               ),
               onPressed: () async {
@@ -231,7 +232,7 @@ class _BarangRusakPageState extends State<BarangRusakPage> {
                 if (res['success'] == true) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      backgroundColor: isBuang ? Colors.red : AppColors.success,
+                      backgroundColor: isBuang ? tampilanHabis.warnaTeks : tampilanAman.warnaTeks,
                       content: Text(res['message'] ?? 'Berhasil diproses!'),
                     ),
                   );
@@ -295,7 +296,6 @@ class _BarangRusakPageState extends State<BarangRusakPage> {
                       children: [
                         Row(
                           children: [
-                            // Kotak icon
                             Container(
                               padding: const EdgeInsets.all(9),
                               decoration: BoxDecoration(
@@ -303,7 +303,6 @@ class _BarangRusakPageState extends State<BarangRusakPage> {
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
                               ),
-                              // Segitiga warning putih
                               child: const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 22),
                             ),
                             const SizedBox(width: 12),
@@ -446,10 +445,10 @@ class _BarangRusakPageState extends State<BarangRusakPage> {
                             Container(
                               padding: const EdgeInsets.all(20),
                               decoration: BoxDecoration(
-                                color: Colors.green.shade50,
+                                color: tampilanAman.latar,
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(Icons.check_circle_outline, size: 54, color: AppColors.success),
+                              child: Icon(Icons.check_circle_outline, size: 54, color: tampilanAman.warnaTeks),
                             ),
                             const SizedBox(height: 16),
                             const Text(
@@ -502,12 +501,12 @@ class _BarangRusakPageState extends State<BarangRusakPage> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Strip aksen oranye-merah di kiri
+              // Strip aksen ungu di kiri
               Container(
                 width: 5,
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Color(0xFFD97706), Color(0xFFEF4444)],
+                    colors: [Color(0xFF6D28D9), Color(0xFFA78BFA)],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                   ),
@@ -522,7 +521,6 @@ class _BarangRusakPageState extends State<BarangRusakPage> {
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Thumbnail lebih besar
                           ClipRRect(
                             borderRadius: BorderRadius.circular(12),
                             child: gambar != null
@@ -562,8 +560,8 @@ class _BarangRusakPageState extends State<BarangRusakPage> {
                                 const SizedBox(height: 6),
                                 Text(
                                   'Estimasi Kerugian: ${_formatRupiah(totalRugi)}',
-                                  style: const TextStyle(
-                                    color: Color(0xFFDC2626),
+                                  style: TextStyle(
+                                    color: tampilanRusak.warnaTeks,
                                     fontSize: 12.5,
                                     fontWeight: FontWeight.w700,
                                   ),
@@ -572,22 +570,11 @@ class _BarangRusakPageState extends State<BarangRusakPage> {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          // Badge rusak
-                          Container(
+                          LencanaStatus(
+                            tampilanRusak,
+                            label: '$stokRusak Rusak',
+                            ukuranFont: 12,
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: Colors.red.shade50,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: Colors.red.shade200, width: 0.8),
-                            ),
-                            child: Text(
-                              '$stokRusak Rusak',
-                              style: TextStyle(
-                                color: Colors.red.shade800,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 12,
-                              ),
-                            ),
                           ),
                         ],
                       ),
@@ -598,24 +585,18 @@ class _BarangRusakPageState extends State<BarangRusakPage> {
                       ),
                       const SizedBox(height: 10),
                       // Chip stok layak
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: AppColors.successBg,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          'Layak: $stokLayak ${item['satuan'] ?? 'unit'}',
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            color: AppColors.success,
-                            fontWeight: FontWeight.w700,
-                          ),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: LencanaStatus(
+                          tampilanAman,
+                          label: 'Layak: $stokLayak ${item['satuan'] ?? 'unit'}',
+                          ukuranFont: 11.5,
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         ),
                       ),
                       const SizedBox(height: 12),
 
-                      // Tombol aksi (lebih besar)
+                      // Tombol aksi
                       Row(
                         children: [
                           Expanded(
@@ -633,8 +614,8 @@ class _BarangRusakPageState extends State<BarangRusakPage> {
                                 style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
                               ),
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: const Color(0xFFD97706),
-                                side: const BorderSide(color: Color(0xFFFBBF24), width: 1.4),
+                                foregroundColor: tampilanRusak.warnaTeks,
+                                side: BorderSide(color: tampilanRusak.garis, width: 1.4),
                                 minimumSize: const Size(0, 44),
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -677,10 +658,10 @@ class _BarangRusakPageState extends State<BarangRusakPage> {
       width: 68,
       height: 68,
       decoration: BoxDecoration(
-        color: Colors.orange.shade50,
+        color: tampilanRusak.latar,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Icon(Icons.build_circle_outlined, color: Colors.orange.shade300, size: 28),
+      child: Icon(Icons.build_circle_outlined, color: tampilanRusak.garis, size: 28),
     );
   }
 }

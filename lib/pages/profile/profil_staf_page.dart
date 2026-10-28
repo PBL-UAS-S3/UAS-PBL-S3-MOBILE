@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../config/api_config.dart';
 import '../../theme/app_theme.dart';
 
+const int _minPassword = 8;
+
 class ProfilStafPage extends StatefulWidget {
   const ProfilStafPage({super.key});
 
@@ -104,8 +106,8 @@ class _ProfilStafPageState extends State<ProfilStafPage> {
       setState(() => pesanPassword = 'Semua kolom wajib diisi');
       return;
     }
-    if (passwordBaruController.text.length < 6) {
-      setState(() => pesanPassword = 'Password baru minimal 6 karakter');
+    if (passwordBaruController.text.length < _minPassword) {
+      setState(() => pesanPassword = 'Password baru minimal $_minPassword karakter');
       return;
     }
     if (passwordBaruController.text != konfirmasiController.text) {
@@ -197,7 +199,7 @@ class _ProfilStafPageState extends State<ProfilStafPage> {
                   TextField(controller: passwordLamaController, obscureText: true, decoration: const InputDecoration(border: UnderlineInputBorder())),
                   const SizedBox(height: 14),
                   const Text('Password Baru', style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600)),
-                  TextField(controller: passwordBaruController, obscureText: true, decoration: const InputDecoration(hintText: 'Minimal 6 karakter', border: UnderlineInputBorder())),
+                  TextField(controller: passwordBaruController, obscureText: true, decoration: const InputDecoration(hintText: 'Minimal 8 karakter', border: UnderlineInputBorder())),
                   const SizedBox(height: 14),
                   const Text('Konfirmasi Password Baru', style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600)),
                   TextField(controller: konfirmasiController, obscureText: true, decoration: const InputDecoration(border: UnderlineInputBorder())),

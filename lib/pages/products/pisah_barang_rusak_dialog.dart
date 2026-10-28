@@ -1,6 +1,21 @@
 import 'package:flutter/material.dart';
 import '../../services/product_service.dart';
 import '../../theme/app_theme.dart';
+import '../../theme/status_stok.dart';
+
+// Template alasan kerusakan, supaya staf tinggal memilih
+const List<String> _daftarAlasan = [
+  'Kemasan rusak / penyok',
+  'Barang pecah / retak',
+  'Cacat produksi / pabrik',
+  'Kedaluwarsa (expired)',
+  'Terkena air / basah / lembap',
+  'Tidak berfungsi / mati',
+  'Tidak lengkap / ada bagian hilang',
+  'Rusak saat pengiriman',
+  _alasanLainnya,
+];
+const String _alasanLainnya = 'Lainnya (jelaskan di catatan)';
 
 class PisahBarangRusakDialog extends StatefulWidget {
   final Map item;
@@ -27,8 +42,8 @@ class PisahBarangRusakDialog extends StatefulWidget {
 
 class _PisahBarangRusakDialogState extends State<PisahBarangRusakDialog> {
   final jumlahController = TextEditingController();
-  final alasanController = TextEditingController();
   final catatanController = TextEditingController();
+  String? alasanDipilih;
 
   bool loading = false;
   String pesanError = '';
@@ -36,20 +51,12 @@ class _PisahBarangRusakDialogState extends State<PisahBarangRusakDialog> {
   @override
   void dispose() {
     jumlahController.dispose();
-    alasanController.dispose();
     catatanController.dispose();
     super.dispose();
   }
 
-  int get stokLayak {
-    final s = widget.item['stok_saat_ini'];
-    return s is int ? s : int.tryParse(s?.toString() ?? '0') ?? 0;
-  }
-
-  int get stokRusak {
-    final s = widget.item['stok_rusak'];
-    return s is int ? s : int.tryParse(s?.toString() ?? '0') ?? 0;
-  }
+  int get stokLayak => ambilInt(widget.item['stok_saat_ini']);
+  int get stokRusak => ambilInt(widget.item['stok_rusak']);
 
   Future<void> submitPemisahan() async {
     final jumlah = int.tryParse(jumlahController.text.trim()) ?? 0;
@@ -63,9 +70,14 @@ class _PisahBarangRusakDialogState extends State<PisahBarangRusakDialog> {
       return;
     }
 
-    final alasan = alasanController.text.trim();
-    if (alasan.isEmpty) {
-      setState(() => pesanError = 'Alasan kerusakan wajib diisi');
+    if (alasanDipilih == null) {
+      setState(() => pesanError = 'Pilih kondisi / alasan kerusakan dulu');
+      return;
+    }
+
+    final catatan = catatanController.text.trim();
+    if (alasanDipilih == _alasanLainnya && catatan.isEmpty) {
+      setState(() => pesanError = 'Jelaskan kondisinya di kolom catatan tambahan');
       return;
     }
 
@@ -75,22 +87,25 @@ class _PisahBarangRusakDialogState extends State<PisahBarangRusakDialog> {
     });
 
     final sku = widget.item['sku']?.toString() ?? '';
+    final alasanKirim = alasanDipilih == _alasanLainnya ? 'Lainnya' : alasanDipilih!;
+
     final res = await ProductService.pisahkanBarangRusak(
       sku: sku,
       jumlah: jumlah,
-      alasan: alasan,
-      keterangan: catatanController.text.trim(),
+      alasan: alasanKirim,
+      keterangan: catatan,
     );
 
     if (!mounted) return;
     setState(() => loading = false);
 
     if (res['success'] == true) {
+      final messenger = ScaffoldMessenger.of(context);
       if (widget.onSuccess != null) widget.onSuccess!();
       Navigator.pop(context, true);
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(
-          backgroundColor: AppColors.primaryDark,
+          backgroundColor: tampilanRusak.warnaTeks,
           content: Text(
             'Berhasil memisahkan $jumlah unit ke Barang Rusak!',
             style: const TextStyle(fontWeight: FontWeight.bold),
@@ -133,10 +148,10 @@ class _PisahBarangRusakDialogState extends State<PisahBarangRusakDialog> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Colors.red.shade50,
+                    color: tampilanRusak.latar,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.build_circle_outlined, color: Colors.red, size: 24),
+                  child: Icon(Icons.build_circle_outlined, color: tampilanRusak.warnaTeks, size: 24),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -190,11 +205,11 @@ class _PisahBarangRusakDialogState extends State<PisahBarangRusakDialog> {
                     children: [
                       Text(
                         'Layak: $stokLayak',
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.success, fontSize: 13),
+                        style: TextStyle(fontWeight: FontWeight.bold, color: tampilanAman.warnaTeks, fontSize: 13),
                       ),
                       Text(
                         'Rusak: $stokRusak',
-                        style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.red, fontSize: 12),
+                        style: TextStyle(fontWeight: FontWeight.w600, color: tampilanRusak.warnaTeks, fontSize: 12),
                       ),
                     ],
                   ),
@@ -221,19 +236,28 @@ class _PisahBarangRusakDialogState extends State<PisahBarangRusakDialog> {
             const SizedBox(height: 16),
 
             const Text(
-              'Alasan Kerusakan / Kondisi',
+              'Kondisi / Alasan Kerusakan',
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark),
             ),
             const SizedBox(height: 6),
-            TextField(
-              controller: alasanController,
-              textCapitalization: TextCapitalization.sentences,
-              minLines: 2,
-              maxLines: 3,
+            DropdownButtonFormField<String>(
+              value: alasanDipilih,
+              isExpanded: true,
+              hint: const Text('Pilih kondisi / alasan'),
               decoration: InputDecoration(
-                hintText: 'Tulis kenapa barang ini rusak',
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
+              items: _daftarAlasan
+                  .map((a) => DropdownMenuItem<String>(
+                        value: a,
+                        child: Text(a, overflow: TextOverflow.ellipsis),
+                      ))
+                  .toList(),
+              onChanged: (v) => setState(() {
+                alasanDipilih = v;
+                pesanError = '';
+              }),
             ),
             const SizedBox(height: 14),
 
@@ -280,7 +304,7 @@ class _PisahBarangRusakDialogState extends State<PisahBarangRusakDialog> {
               child: ElevatedButton.icon(
                 onPressed: loading ? null : submitPemisahan,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red.shade600,
+                  backgroundColor: tampilanRusak.warnaTeks,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),

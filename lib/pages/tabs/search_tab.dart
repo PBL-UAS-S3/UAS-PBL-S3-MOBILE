@@ -1,13 +1,20 @@
 import 'package:flutter/material.dart';
-import '../../config/api_config.dart';
+
 import '../../theme/app_theme.dart';
+import '../../widgets/baris_produk.dart';
 import '../products/produk_detail_page.dart';
 
 class SearchTab extends StatefulWidget {
   final List products;
   final VoidCallback onScanTap;
+  final VoidCallback? onInputManualTap;
 
-  const SearchTab({super.key, required this.products, required this.onScanTap});
+  const SearchTab({
+    super.key,
+    required this.products,
+    required this.onScanTap,
+    this.onInputManualTap,
+  });
 
   @override
   State<SearchTab> createState() => _SearchTabState();
@@ -17,150 +24,136 @@ class _SearchTabState extends State<SearchTab> {
   final queryController = TextEditingController();
   String query = '';
 
-  bool _menipis(Map item) {
-    final stok = item['stok_saat_ini'] ?? 0;
-    final min = item['stok_minimum'] ?? 0;
-    return stok <= min;
+  @override
+  void dispose() {
+    queryController.dispose();
+    super.dispose();
   }
 
-  String _formatRupiah(dynamic angka) {
-    final nilai = num.tryParse(angka?.toString() ?? '0') ?? 0;
-    final bagian = nilai.toInt().toString().split('').reversed.toList();
-    final hasil = <String>[];
-    for (int i = 0; i < bagian.length; i++) {
-      if (i != 0 && i % 3 == 0) hasil.add('.');
-      hasil.add(bagian[i]);
-    }
-    return 'Rp${hasil.reversed.join()}';
+  void _bukaDetail(Map item) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => ProdukDetailPage(item: item)),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final hasil = query.isEmpty
+    final q = query.trim().toLowerCase();
+    final hasil = q.isEmpty
         ? []
         : widget.products.where((p) {
             final nama = (p['nama'] ?? '').toString().toLowerCase();
             final sku = (p['sku'] ?? '').toString().toLowerCase();
-            final q = query.toLowerCase();
-            return nama.contains(q) || sku.contains(q);
+            final kategori = (p['kategori'] ?? '').toString().toLowerCase();
+            return nama.contains(q) || sku.contains(q) || kategori.contains(q);
           }).toList();
 
+    return ColoredBox(
+      color: AppColors.bg,
+      child: ListView(
+        padding: const EdgeInsets.only(bottom: 24),
+        children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 20, 16, 14),
+            child: Text(
+              'Cari',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textDark,
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: TextField(
+              controller: queryController,
+              onChanged: (v) => setState(() => query = v),
+              style: const TextStyle(fontSize: 15, color: AppColors.textDark),
+              decoration: InputDecoration(
+                hintText: 'Cari nama, SKU, atau kategori',
+                hintStyle: const TextStyle(color: AppColors.textGrey, fontSize: 14),
+                prefixIcon: const Icon(Icons.search, size: 20, color: AppColors.textGrey),
+                suffixIcon: query.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.close, size: 18, color: AppColors.textGrey),
+                        onPressed: () {
+                          queryController.clear();
+                          setState(() => query = '');
+                        },
+                      )
+                    : null,
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(vertical: 13),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: AppColors.border),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: AppColors.border),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: AppColors.primary, width: 1.5),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (q.isEmpty) ..._tampilanAwal() else ..._tampilanHasil(hasil),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _tampilanAwal() {
     final daftarKategori = widget.products
         .map((p) => (p['kategori'] ?? '').toString())
         .where((k) => k.isNotEmpty)
         .toSet()
-        .take(6)
+        .take(8)
         .toList();
-
-    return Stack(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text('Search', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 4),
-              Text('Cari produk berdasarkan nama atau SKU', style: TextStyle(color: Colors.grey.shade500, fontSize: 12.5)),
-              const SizedBox(height: 16),
-              TextField(
-                controller: queryController,
-                onChanged: (v) => setState(() => query = v),
-                decoration: InputDecoration(
-                  hintText: 'Search items or SKU...',
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon: query.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.close, size: 18),
-                          onPressed: () {
-                            queryController.clear();
-                            setState(() => query = '');
-                          },
-                        )
-                      : null,
-                  filled: true,
-                  fillColor: Colors.grey.shade100,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                ),
-              ),
-              const SizedBox(height: 14),
-
-              Expanded(
-                child: query.isEmpty
-                    ? _tampilanKosong(daftarKategori)
-                    : hasil.isEmpty
-                        ? _tidakDitemukan()
-                        : _daftarHasil(hasil),
-              ),
-            ],
-          ),
-        ),
-        Positioned(
-          bottom: 20,
-          right: 20,
-          child: FloatingActionButton(
-            heroTag: 'scan-search',
-            backgroundColor: AppColors.primary,
-            onPressed: widget.onScanTap,
-            child: const Icon(Icons.qr_code_scanner, color: Colors.white),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ---------------------------------------------------------------------
-  // Tampilan sebelum mengetik: kategori cepat + produk terbaru
-  // ---------------------------------------------------------------------
-  Widget _tampilanKosong(List<String> daftarKategori) {
     final produkTerbaru = widget.products.take(6).toList();
 
-    return ListView(
-      padding: EdgeInsets.zero,
-      children: [
-        // Ajakan scan
-        GestureDetector(
-          onTap: widget.onScanTap,
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [AppColors.primary, AppColors.primaryDark],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 46,
-                  height: 46,
-                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.22), borderRadius: BorderRadius.circular(13)),
-                  child: const Icon(Icons.qr_code_scanner, color: Colors.white, size: 22),
-                ),
-                const SizedBox(width: 14),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Scan barcode produk', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14.5)),
-                      SizedBox(height: 2),
-                      Text('Lebih cepat dari ketik manual', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                    ],
-                  ),
-                ),
-                const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 14),
-              ],
-            ),
+    return [
+      // Aksi cepat
+      Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border(
+            top: BorderSide(color: AppColors.border),
+            bottom: BorderSide(color: AppColors.border),
           ),
         ),
-        const SizedBox(height: 22),
+        child: Column(
+          children: [
+            _barisAksi(
+              Icons.qr_code_scanner,
+              'Scan barcode',
+              'Arahkan kamera ke barcode SKU',
+              widget.onScanTap,
+            ),
+            if (widget.onInputManualTap != null) ...[
+              Divider(height: 1, indent: 54, color: AppColors.border),
+              _barisAksi(
+                Icons.keyboard_outlined,
+                'Input SKU manual',
+                'Ketik SKU untuk mencatat transaksi',
+                widget.onInputManualTap!,
+              ),
+            ],
+          ],
+        ),
+      ),
 
-        if (daftarKategori.isNotEmpty) ...[
-          const Text('Cari Cepat per Kategori', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, color: AppColors.textDark)),
-          const SizedBox(height: 10),
-          Wrap(
+      if (daftarKategori.isNotEmpty) ...[
+        _judulSeksi('Kategori'),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Wrap(
             spacing: 8,
             runSpacing: 8,
             children: daftarKategori.map((k) {
@@ -170,180 +163,132 @@ class _SearchTabState extends State<SearchTab> {
                   setState(() => query = k);
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: AppColors.primarySoft,
-                    borderRadius: BorderRadius.circular(30),
-                    border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.border),
                   ),
-                  child: Text(k, style: const TextStyle(color: AppColors.primaryDarkText, fontSize: 12.5, fontWeight: FontWeight.w600)),
+                  child: Text(
+                    k,
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textDark,
+                    ),
+                  ),
                 ),
               );
             }).toList(),
           ),
-          const SizedBox(height: 24),
-        ],
+        ),
+      ],
 
-        if (produkTerbaru.isNotEmpty) ...[
-          const Text('Produk Terbaru', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, color: AppColors.textDark)),
-          const SizedBox(height: 10),
-          ...produkTerbaru.asMap().entries.map(
-            (e) => _kartuProduk(e.value, isLast: e.key == produkTerbaru.length - 1),
-          ),
-        ] else
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 40),
-            child: Center(
-              child: Column(
-                children: [
-                  Icon(Icons.inventory_2_outlined, size: 56, color: Colors.grey.shade300),
-                  const SizedBox(height: 10),
-                  Text('Belum ada produk di gudang.', style: TextStyle(color: Colors.grey.shade400)),
-                ],
-              ),
+      _judulSeksi('Produk terbaru'),
+      if (produkTerbaru.isEmpty)
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 32),
+          child: Center(
+            child: Text(
+              'Belum ada produk di gudang.',
+              style: TextStyle(color: AppColors.textGrey, fontSize: 13.5),
             ),
           ),
-      ],
-    );
+        )
+      else
+        DaftarProduk(produk: produkTerbaru, onTap: _bukaDetail),
+    ];
   }
 
-  Widget _tidakDitemukan() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(color: Colors.grey.shade100, shape: BoxShape.circle),
-            child: Icon(Icons.search_off, size: 32, color: Colors.grey.shade400),
+  List<Widget> _tampilanHasil(List hasil) {
+    if (hasil.isEmpty) {
+      return [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(32, 48, 32, 0),
+          child: Column(
+            children: [
+              Icon(Icons.search_off, size: 44, color: Colors.grey.shade400),
+              const SizedBox(height: 12),
+              Text(
+                'Tidak ada hasil untuk "$query"',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textDark,
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Coba kata kunci lain atau scan barcode.',
+                style: TextStyle(fontSize: 13, color: AppColors.textGrey),
+              ),
+            ],
           ),
-          const SizedBox(height: 14),
-          Text('Tidak ditemukan untuk "$query"', style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 4),
-          Text('Coba kata kunci lain atau scan barcode', style: TextStyle(color: Colors.grey.shade400, fontSize: 12.5)),
-        ],
+        ),
+      ];
+    }
+
+    return [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+        child: Text(
+          '${hasil.length} hasil',
+          style: const TextStyle(fontSize: 12.5, color: AppColors.textGrey),
+        ),
+      ),
+      DaftarProduk(produk: hasil, onTap: _bukaDetail),
+    ];
+  }
+
+  Widget _judulSeksi(String label) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 22, 16, 8),
+      child: Text(
+        label.toUpperCase(),
+        style: const TextStyle(
+          fontSize: 11.5,
+          fontWeight: FontWeight.w700,
+          color: AppColors.textGrey,
+          letterSpacing: 0.6,
+        ),
       ),
     );
   }
 
-  Widget _daftarHasil(List hasil) {
-    return ListView.separated(
-      padding: EdgeInsets.zero,
-      itemCount: hasil.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 10),
-      itemBuilder: (context, index) => _kartuProduk(hasil[index], isLast: index == hasil.length - 1),
-    );
-  }
-
-  Widget _kartuProduk(Map item, {bool isLast = false}) {
-    final menipis = _menipis(item);
-    final gambar = item['gambar'];
-    final kategori = (item['kategori'] != null && item['kategori'].toString().isNotEmpty) ? item['kategori'].toString() : null;
-    final satuan = (item['satuan'] != null && item['satuan'].toString().isNotEmpty) ? item['satuan'].toString() : null;
-
-    return GestureDetector(
-      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ProdukDetailPage(item: item))),
-      child: Container(
-        margin: EdgeInsets.only(bottom: isLast ? 0 : 10),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: AppColors.border),
-          borderRadius: BorderRadius.circular(14),
-        ),
+  Widget _barisAksi(IconData ikon, String judul, String sub, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: gambar != null
-                  ? Image.network(
-                      '${ApiConfig.baseUrl}$gambar',
-                      width: 52,
-                      height: 52,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => _placeholderThumb(),
-                    )
-                  : _placeholderThumb(),
-            ),
-            const SizedBox(width: 12),
+            Icon(ikon, size: 22, color: AppColors.primary),
+            const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(item['nama'] ?? '-', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                  const SizedBox(height: 2),
-                  Text('SKU: ${item['sku'] ?? '-'}', style: TextStyle(color: Colors.grey.shade500, fontSize: 11)),
-                  if (kategori != null || satuan != null) ...[
-                    const SizedBox(height: 6),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 4,
-                      children: [
-                        if (kategori != null) _tagKecil(kategori, AppColors.primarySoft, AppColors.primaryDarkText),
-                        if (satuan != null) _tagKecil(satuan, Colors.grey.shade100, AppColors.textGrey),
-                      ],
+                  Text(
+                    judul,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textDark,
                     ),
-                  ],
-                  const SizedBox(height: 6),
-                  Text(_formatRupiah(item['harga']), style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: AppColors.textDark)),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    sub,
+                    style: const TextStyle(fontSize: 12.5, color: AppColors.textGrey),
+                  ),
                 ],
               ),
             ),
-            const SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text('${item['stok_saat_ini'] ?? 0}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                const SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: menipis ? AppColors.dangerBg : AppColors.successBg,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    menipis ? 'Menipis' : 'Aman',
-                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: menipis ? AppColors.danger : AppColors.success),
-                  ),
-                ),
-                if ((int.tryParse(item['stok_rusak']?.toString() ?? '0') ?? 0) > 0) ...[
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.red.shade100,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      '${item['stok_rusak']} Rusak',
-                      style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.bold, color: Colors.red.shade900),
-                    ),
-                  ),
-                ],
-              ],
-            ),
+            Icon(Icons.chevron_right_rounded, size: 20, color: Colors.grey.shade400),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _tagKecil(String label, Color bg, Color fg) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
-      child: Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: fg)),
-    );
-  }
-
-  Widget _placeholderThumb() {
-    return Container(
-      width: 52,
-      height: 52,
-      color: AppColors.primarySoft,
-      child: const Icon(Icons.inventory_2, color: AppColors.primary, size: 22),
     );
   }
 }

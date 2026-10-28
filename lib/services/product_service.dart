@@ -4,10 +4,20 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../config/api_config.dart';
 
 class ProductService {
+  /// Header Authorization dari token yang tersimpan saat login
+  static Future<Map<String, String>> _headerAuth() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    return {if (token != null) 'Authorization': 'Bearer $token'};
+  }
+
   /// Mengambil semua produk dari server
   static Future<List<Map<String, dynamic>>> fetchProducts() async {
     try {
-      final response = await http.get(Uri.parse('${ApiConfig.baseUrl}/products'));
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/products'),
+        headers: await _headerAuth(),
+      );
       if (response.statusCode == 200) {
         final List decoded = jsonDecode(response.body);
         return decoded.map((e) => Map<String, dynamic>.from(e as Map)).toList();
