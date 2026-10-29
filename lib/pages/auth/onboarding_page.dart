@@ -15,7 +15,7 @@ const Color _hijau = Color(0xFF16A34A);
 const Color _kuning = Color(0xFFB45309);
 const Color _titikKuning = Color(0xFFF59E0B);
 const Color _merah = Color(0xFFDC2626);
-const Color _ungu = Color(0xFF6D28D9);
+const Color _ungu = Color(0xFFEA580C);
 const Color _layarTerang = Color(0xFFF8FAFC);
 
 class OnboardingPage extends StatefulWidget {

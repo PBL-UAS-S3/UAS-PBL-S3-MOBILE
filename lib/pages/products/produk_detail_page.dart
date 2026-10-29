@@ -6,6 +6,7 @@ import '../../theme/app_theme.dart';
 import '../../theme/status_stok.dart';
 import '../../widgets/baris_produk.dart';
 import '../transactions/transaksi_page.dart';
+import 'foto_preview_page.dart';
 import 'pisah_barang_rusak_dialog.dart';
 
 class ProdukDetailPage extends StatefulWidget {
@@ -93,18 +94,66 @@ class _ProdukDetailPageState extends State<ProdukDetailPage> {
       body: ListView(
         padding: const EdgeInsets.only(bottom: 32),
         children: [
-          // Foto penuh lebar
-          Container(
-            height: 240,
-            width: double.infinity,
-            color: Colors.grey.shade100,
-            child: gambar != null
-                ? Image.network(
-                    '${ApiConfig.baseUrl}$gambar',
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) => _placeholderBesar(),
-                  )
-                : _placeholderBesar(),
+          // Banner foto di bagian atas dengan mode crop (BoxFit.cover)
+          GestureDetector(
+            onTap: gambar != null
+                ? () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => FotoPreviewPage(
+                          imageUrl: '${ApiConfig.baseUrl}$gambar',
+                          judul: currentItem['nama']?.toString(),
+                        ),
+                      ),
+                    );
+                  }
+                : null,
+            child: Container(
+              height: 240,
+              width: double.infinity,
+              color: Colors.grey.shade100,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (gambar != null)
+                    Image.network(
+                      '${ApiConfig.baseUrl}$gambar',
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => _placeholderBesar(),
+                    )
+                  else
+                    _placeholderBesar(),
+                  if (gambar != null)
+                    Positioned(
+                      right: 12,
+                      bottom: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.65),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.fullscreen, color: Colors.white, size: 16),
+                            SizedBox(width: 4),
+                            Text(
+                              'Lihat foto utuh',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ),
 
           // Nama, SKU, status

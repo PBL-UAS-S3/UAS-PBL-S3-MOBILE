@@ -37,9 +37,9 @@ const TampilanStatus tampilanAman = TampilanStatus(
 
 const TampilanStatus tampilanRusak = TampilanStatus(
   'Rusak',
-  Color(0xFF6D28D9),
-  Color(0xFFEDE9FE),
-  Color(0xFFC4B5FD),
+  Color(0xFFEA580C),
+  Color(0xFFFFEDD5),
+  Color(0xFFFDBA74),
 );
 
 int ambilInt(dynamic nilai) {

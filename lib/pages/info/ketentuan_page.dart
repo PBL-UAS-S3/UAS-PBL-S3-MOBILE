@@ -39,6 +39,7 @@ class _KetentuanPageState extends State<KetentuanPage> {
                         '2. Peran Pengguna.\nAkun Manager hanya dapat diakses lewat web, dan akun Staf Gudang hanya dapat diakses lewat aplikasi mobile.\n\n'
                         '3. Pemisahan Barang Rusak.\nStaf bertanggung jawab memisahkan dan mencatat barang rusak secara akurat agar tersortir dari stok layak pakai.\n\n'
                         '4. Rekomendasi AI.\nRekomendasi restock dari AI bersifat saran berdasarkan data historis, keputusan akhir pembelian tetap berada di tangan Manager.',
+                  textAlign: TextAlign.justify,
                   style: TextStyle(color: Colors.grey.shade700, height: 1.5, fontSize: 13),
                 ),
               ),

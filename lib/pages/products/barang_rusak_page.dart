@@ -146,7 +146,7 @@ class _BarangRusakPageState extends State<BarangRusakPage> {
                   },
                 ),
                 ListTile(
-                  leading: CircleAvatar(backgroundColor: AppColors.primarySoft, child: const Icon(Icons.info_outline, color: AppColors.primary)),
+                  leading: CircleAvatar(backgroundColor: tampilanRusak.latar, child: Icon(Icons.info_outline, color: tampilanRusak.warnaTeks)),
                   title: const Text('Lihat Detail Produk'),
                   subtitle: const Text('Buka halaman informasi lengkap produk ini'),
                   onTap: () {
@@ -281,11 +281,11 @@ class _BarangRusakPageState extends State<BarangRusakPage> {
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1E3A8A),
+                      color: tampilanRusak.warnaTeks,
                       borderRadius: BorderRadius.circular(22),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF1E3A8A).withOpacity(0.35),
+                          color: tampilanRusak.warnaTeks.withOpacity(0.35),
                           blurRadius: 18,
                           offset: const Offset(0, 6),
                         ),
@@ -501,12 +501,12 @@ class _BarangRusakPageState extends State<BarangRusakPage> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Strip aksen ungu di kiri
+              // Strip aksen oranye di kiri
               Container(
                 width: 5,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Color(0xFF6D28D9), Color(0xFFA78BFA)],
+                    colors: [tampilanRusak.warnaTeks, tampilanRusak.garis],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                   ),
@@ -627,7 +627,7 @@ class _BarangRusakPageState extends State<BarangRusakPage> {
                             child: ElevatedButton(
                               onPressed: () => _tampilkanDialogAksi(item),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
+                                backgroundColor: tampilanRusak.warnaTeks,
                                 foregroundColor: Colors.white,
                                 minimumSize: const Size(0, 44),
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),

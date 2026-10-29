@@ -18,8 +18,23 @@ class TransaksiPage extends StatefulWidget {
 
 class _TransaksiPageState extends State<TransaksiPage> {
   late String tipe;
-  final jumlahController = TextEditingController();
-  final catatanController = TextEditingController();
+  final Map<String, TextEditingController> _jumlahControllers = {
+    'in': TextEditingController(),
+    'out': TextEditingController(),
+    'rusak': TextEditingController(),
+  };
+  final Map<String, TextEditingController> _catatanControllers = {
+    'in': TextEditingController(),
+    'out': TextEditingController(),
+    'rusak': TextEditingController(),
+  };
+
+  TextEditingController get _currentJumlahController =>
+      _jumlahControllers[tipe] ??= TextEditingController();
+
+  TextEditingController get _currentCatatanController =>
+      _catatanControllers[tipe] ??= TextEditingController();
+
   String pesan = '';
   bool loading = false;
   Map<String, dynamic>? detailProduk;
@@ -33,8 +48,12 @@ class _TransaksiPageState extends State<TransaksiPage> {
 
   @override
   void dispose() {
-    jumlahController.dispose();
-    catatanController.dispose();
+    for (final c in _jumlahControllers.values) {
+      c.dispose();
+    }
+    for (final c in _catatanControllers.values) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -46,7 +65,7 @@ class _TransaksiPageState extends State<TransaksiPage> {
   }
 
   Future<void> kirimTransaksi() async {
-    final jml = int.tryParse(jumlahController.text.trim()) ?? 0;
+    final jml = int.tryParse(_currentJumlahController.text.trim()) ?? 0;
     if (jml <= 0) {
       setState(() => pesan = 'Jumlah harus lebih besar dari 0');
       return;
@@ -57,11 +76,12 @@ class _TransaksiPageState extends State<TransaksiPage> {
       pesan = '';
     });
 
+    final catatan = _currentCatatanController.text.trim();
     final res = await ProductService.catatTransaksi(
       sku: widget.sku,
       tipe: tipe,
       jumlah: jml,
-      catatan: catatanController.text.trim().isNotEmpty ? catatanController.text.trim() : null,
+      catatan: catatan.isNotEmpty ? catatan : null,
     );
 
     if (!mounted) return;
@@ -159,7 +179,8 @@ class _TransaksiPageState extends State<TransaksiPage> {
             ),
             const SizedBox(height: 8),
             TextField(
-              controller: jumlahController,
+              key: ValueKey('jumlah_$tipe'),
+              controller: _currentJumlahController,
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
                 hintText: 'Masukkan jumlah unit',
@@ -173,7 +194,8 @@ class _TransaksiPageState extends State<TransaksiPage> {
             const Text('Catatan / Keterangan (Opsional)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textDark)),
             const SizedBox(height: 8),
             TextField(
-              controller: catatanController,
+              key: ValueKey('catatan_$tipe'),
+              controller: _currentCatatanController,
               decoration: InputDecoration(
                 hintText: tipe == 'rusak' ? 'Contoh: Kemasan robek saat bongkar muat' : 'Catatan transaksi...',
                 filled: true,
@@ -226,7 +248,10 @@ class _TransaksiPageState extends State<TransaksiPage> {
     final selected = tipe == val;
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() => tipe = val),
+        onTap: () => setState(() {
+          tipe = val;
+          pesan = '';
+        }),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(

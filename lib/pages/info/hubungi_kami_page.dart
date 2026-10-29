@@ -30,8 +30,14 @@ class _HubungiKamiPageState extends State<HubungiKamiPage> {
       sukses = '';
     });
 
-    if (pesanController.text.trim().isEmpty) {
+    final teks = pesanController.text.trim();
+    if (teks.isEmpty) {
       setState(() => pesanError = 'Pesan tidak boleh kosong');
+      return;
+    }
+
+    if (teks.length < 10) {
+      setState(() => pesanError = 'Pesan terlalu pendek, minimal 10 karakter (${teks.length}/10)');
       return;
     }
 
@@ -43,7 +49,7 @@ class _HubungiKamiPageState extends State<HubungiKamiPage> {
       final response = await http.post(
         Uri.parse('${ApiConfig.baseUrl}/keluhan'),
         headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
-        body: jsonEncode({'pesan': pesanController.text}),
+        body: jsonEncode({'pesan': teks}),
       );
 
       final data = jsonDecode(response.body);
@@ -63,6 +69,8 @@ class _HubungiKamiPageState extends State<HubungiKamiPage> {
 
   @override
   Widget build(BuildContext context) {
+    final jumlahKarakter = pesanController.text.trim().length;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Hubungi Kami')),
       body: Padding(
@@ -75,7 +83,23 @@ class _HubungiKamiPageState extends State<HubungiKamiPage> {
             TextField(
               controller: pesanController,
               maxLines: 8,
-              decoration: const InputDecoration(border: OutlineInputBorder(), hintText: 'Jelaskan kendala yang kamu alami...'),
+              onChanged: (_) {
+                if (pesanError.isNotEmpty && pesanController.text.trim().length >= 10) {
+                  setState(() => pesanError = '');
+                } else {
+                  setState(() {});
+                }
+              },
+              decoration: InputDecoration(
+                border: const OutlineInputBorder(),
+                hintText: 'Jelaskan kendala yang kamu alami...',
+                helperText: 'Minimal 10 karakter ($jumlahKarakter/10)',
+                helperStyle: TextStyle(
+                  color: jumlahKarakter >= 10 ? AppColors.success : Colors.grey.shade600,
+                  fontSize: 12,
+                  fontWeight: jumlahKarakter >= 10 ? FontWeight.w600 : FontWeight.normal,
+                ),
+              ),
             ),
             if (pesanError.isNotEmpty) ...[
               const SizedBox(height: 12),
